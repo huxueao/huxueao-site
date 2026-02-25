@@ -11,16 +11,17 @@
 
   <style>
     :root{
-      --bg-ink:#0b0d12;
-      --bg-warm:#2a1d16;
+      --bg0:#07070a;
+      --bg1:#0b0d12;
       --paper: rgba(255,255,255,.06);
-      --paper-2: rgba(255,255,255,.10);
-      --text: rgba(255,255,255,.90);
-      --muted: rgba(255,255,255,.65);
+      --paper2: rgba(255,255,255,.09);
       --line: rgba(255,255,255,.14);
-      --shadow: rgba(0,0,0,.55);
-      --glow: rgba(255, 204, 153, .18);
-      --radius: 22px;
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.66);
+      --shadow: rgba(0,0,0,.6);
+      --warm: rgba(255, 208, 160, .18);
+      --cool: rgba(130, 170, 255, .13);
+      --r: 22px;
     }
 
     *{ box-sizing:border-box; }
@@ -30,272 +31,278 @@
       color:var(--text);
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:
-        radial-gradient(1200px 800px at 18% 22%, rgba(255,207,160,.18), transparent 55%),
-        radial-gradient(900px 700px at 78% 70%, rgba(160,180,255,.12), transparent 58%),
-        linear-gradient(135deg, var(--bg-warm), var(--bg-ink) 55%, #0a0b10);
+        radial-gradient(1200px 800px at 18% 20%, var(--warm), transparent 55%),
+        radial-gradient(900px 700px at 80% 75%, var(--cool), transparent 60%),
+        linear-gradient(135deg, #2a1c14, var(--bg1) 45%, var(--bg0));
       overflow-x:hidden;
     }
 
-    /* 油画质感：噪点 + 轻微涂抹 */
+    /* 油画颗粒 */
     body::before{
       content:"";
       position:fixed; inset:0;
       background:
-        radial-gradient(circle at 30% 35%, rgba(255,255,255,.05), transparent 40%),
-        radial-gradient(circle at 80% 65%, rgba(255,255,255,.04), transparent 42%),
+        radial-gradient(circle at 25% 30%, rgba(255,255,255,.06), transparent 45%),
+        radial-gradient(circle at 78% 72%, rgba(255,255,255,.05), transparent 48%),
         repeating-linear-gradient(0deg, rgba(255,255,255,.02), rgba(255,255,255,.02) 1px, transparent 2px, transparent 6px);
+      opacity:.45;
       mix-blend-mode: overlay;
-      opacity:.55;
       pointer-events:none;
-      filter: blur(.2px);
-    }
-
-    /* 漂浮的油彩光斑 */
-    .blobs{
-      position:fixed; inset:-20vh -10vw;
-      pointer-events:none;
-      z-index:0;
-      filter: blur(26px);
-      opacity:.8;
-      transform: translateZ(0);
-    }
-    .blob{
-      position:absolute;
-      width: 520px; height: 520px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 30%, rgba(255, 206, 150, .35), rgba(255, 130, 80, .08) 55%, transparent 70%);
-      animation: drift 22s ease-in-out infinite alternate;
-    }
-    .blob.b2{
-      width: 620px; height: 620px;
-      left: 60%; top: 35%;
-      background: radial-gradient(circle at 35% 35%, rgba(140, 175, 255, .28), rgba(70, 90, 160, .10) 55%, transparent 72%);
-      animation-duration: 28s;
-      animation-delay: -8s;
-    }
-    .blob.b1{ left: 8%; top: 10%; }
-
-    @keyframes drift{
-      0%{ transform: translate(0,0) scale(1); }
-      100%{ transform: translate(40px, 55px) scale(1.06); }
     }
 
     .wrap{
-      position:relative;
-      z-index:1;
       min-height:100%;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding: 64px 18px;
+      padding: 70px 18px;
+      position:relative;
     }
 
     .shell{
-      width:min(1100px, 100%);
+      width:min(1120px, 100%);
       display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 26px;
-      align-items: stretch;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 24px;
+      align-items:stretch;
     }
-
-    @media (max-width: 900px){
+    @media (max-width: 920px){
       .shell{ grid-template-columns: 1fr; }
     }
 
     .panel{
-      background: linear-gradient(180deg, var(--paper), rgba(255,255,255,.03));
+      background: linear-gradient(180deg, var(--paper2), rgba(255,255,255,.04));
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: 0 22px 70px var(--shadow);
-      backdrop-filter: blur(10px);
+      border-radius: var(--r);
+      box-shadow: 0 24px 80px var(--shadow);
+      backdrop-filter: blur(12px);
       overflow:hidden;
     }
 
-    /* 左侧：卡牌展览 */
-    .gallery{
-      padding: 22px;
-      display:flex;
-      flex-direction:column;
-      gap: 14px;
-    }
+    /* 左侧：卡牌画廊 */
+    .gallery{ padding: 22px; display:flex; flex-direction:column; gap: 14px; }
 
     .badge{
       display:inline-flex;
-      gap:10px;
       align-items:center;
+      gap:10px;
       padding: 10px 12px;
-      width: fit-content;
       border-radius: 999px;
+      width: fit-content;
       background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
+      border: 1px solid rgba(255,255,255,.12);
       color: var(--muted);
       font-size: 13px;
-      letter-spacing: .2px;
     }
     .dot{
-      width:8px; height:8px; border-radius:99px;
-      background: rgba(255, 200, 140, .9);
-      box-shadow: 0 0 18px rgba(255, 200, 140, .45);
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(255, 205, 150, .95);
+      box-shadow: 0 0 18px rgba(255, 205, 150, .55);
     }
 
-    .cardFrame{
+    .frame{
       position:relative;
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.12);
-      background:
-        radial-gradient(900px 600px at 40% 20%, rgba(255,200,140,.10), transparent 55%),
-        radial-gradient(800px 500px at 70% 80%, rgba(120,160,255,.08), transparent 60%),
-        rgba(0,0,0,.20);
-      padding: 18px;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,.04),
-        0 18px 50px rgba(0,0,0,.42);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      padding: 16px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
     }
 
-    .cardImg{
+    .art{
+      position:relative;
       width:100%;
-      display:block;
+      aspect-ratio: 2.5 / 3.5;
       border-radius: 14px;
-      box-shadow:
-        0 28px 80px rgba(0,0,0,.55),
-        0 0 0 1px rgba(255,255,255,.12);
+      overflow:hidden;
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 30px 90px rgba(0,0,0,.58);
       transform: translateZ(0);
-      transition: transform .35s ease, filter .35s ease;
-      filter: saturate(1.05) contrast(1.03);
     }
 
-    .cardFrame:hover .cardImg{
-      transform: scale(1.01);
-      filter: saturate(1.12) contrast(1.05);
+    .art img{
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      display:block;
+      transform: scale(1.02);
+      filter: saturate(1.06) contrast(1.04);
     }
 
-    .shine{
-      pointer-events:none;
-      position:absolute; inset: 18px;
-      border-radius: 14px;
-      background: radial-gradient(600px 240px at 30% 20%, rgba(255,255,255,.18), transparent 55%);
+    .holo{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(700px 280px at 25% 18%, rgba(255,255,255,.22), transparent 55%),
+        linear-gradient(120deg, transparent 35%, rgba(255,255,255,.08), transparent 62%);
       mix-blend-mode: overlay;
-      opacity:.6;
+      opacity:.65;
+      pointer-events:none;
+      animation: shimmer 6s ease-in-out infinite alternate;
+    }
+    @keyframes shimmer{
+      from{ transform: translateX(-6px) translateY(-4px); }
+      to{ transform: translateX(10px) translateY(6px); }
     }
 
     .caption{
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
       display:flex;
       justify-content:space-between;
       gap: 12px;
-      flex-wrap: wrap;
+      flex-wrap:wrap;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
       padding: 2px 2px 0;
     }
-
     .caption a{
-      color: rgba(255,225,190,.9);
+      color: rgba(255,225,190,.92);
       text-decoration:none;
       border-bottom: 1px dashed rgba(255,225,190,.35);
     }
     .caption a:hover{ border-bottom-color: rgba(255,225,190,.75); }
 
-    /* 右侧：优美 Hello World 文案 */
+    /* 右侧：画廊说明牌（重点改这里） */
     .intro{
-      padding: 28px 26px;
+      padding: 26px 24px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      gap: 22px;
+      gap: 18px;
     }
 
-    .title{
+    .kicker{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+    .kicker .tag{
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+    }
+
+    .headline{
+      margin: 6px 0 0;
       font-family: "Playfair Display", serif;
       font-weight: 600;
-      font-size: clamp(34px, 4vw, 54px);
-      line-height: 1.06;
-      margin: 0;
-      letter-spacing: .6px;
+      font-size: clamp(28px, 3.2vw, 44px);
+      line-height: 1.12;
+      letter-spacing: .4px;
     }
 
-    .sub{
-      margin-top: 14px;
+    .lead{
+      margin-top: 10px;
+      color: var(--muted);
       font-size: 15px;
       line-height: 1.9;
-      color: var(--muted);
-      max-width: 52ch;
+      max-width: 56ch;
     }
 
-    .hello{
-      margin-top: 18px;
-      padding: 16px 16px;
+    .quote{
+      margin-top: 14px;
+      padding: 14px 14px;
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
       position:relative;
       overflow:hidden;
     }
-
-    .hello::before{
+    .quote::before{
       content:"";
       position:absolute; inset:-2px;
-      background: radial-gradient(900px 420px at 15% 25%, rgba(255,205,155,.16), transparent 55%);
+      background: radial-gradient(900px 420px at 15% 20%, rgba(255,205,155,.14), transparent 55%);
       opacity:.9;
       pointer-events:none;
     }
-
-    .codeLine{
+    .quote p{
       position:relative;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: 14px;
-      color: rgba(255,255,255,.86);
       margin:0;
-      white-space: pre-wrap;
-      line-height: 1.7;
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(255,255,255,.84);
+    }
+    .quote .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    .grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .item{
+      display:flex;
+      align-items:flex-start;
+      gap: 12px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+    }
+    .icon{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      flex: 0 0 auto;
+      color: rgba(255,225,190,.9);
+    }
+    .item b{
+      display:block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .item span{
+      display:block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
     }
 
     .actions{
       display:flex;
-      gap: 10px;
+      gap:10px;
       flex-wrap:wrap;
-      align-items:center;
-      margin-top: 10px;
+      margin-top: 14px;
     }
-
     .btn{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      gap:10px;
       padding: 11px 14px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.14);
       background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.88);
+      color: rgba(255,255,255,.9);
       text-decoration:none;
       font-size: 14px;
       transition: transform .18s ease, background .18s ease, border-color .18s ease;
-      user-select:none;
     }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.09);
-      border-color: rgba(255,255,255,.22);
-    }
-
-    .btn.primary{
-      background: rgba(255, 206, 150, .14);
-      border-color: rgba(255, 206, 150, .22);
-    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    .btn.primary{ background: rgba(255, 206, 150, .14); border-color: rgba(255, 206, 150, .22); }
 
     .footer{
       display:flex;
       justify-content:space-between;
-      gap: 12px;
+      gap:12px;
       flex-wrap:wrap;
       color: rgba(255,255,255,.45);
       font-size: 12px;
       border-top: 1px solid rgba(255,255,255,.10);
       padding-top: 14px;
+      margin-top: 6px;
     }
-
     .pill{
       padding: 6px 10px;
       border-radius: 999px;
@@ -307,52 +314,81 @@
 </head>
 
 <body>
-  <div class="blobs" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-  </div>
-
   <main class="wrap">
     <section class="shell">
 
-      <!-- 左：主视觉卡牌 -->
+      <!-- 左：卡牌 -->
       <div class="panel gallery">
-        <div class="badge"><span class="dot"></span> Featured Card </div>
+        <div class="badge"><span class="dot"></span> Featured Card · Oil-Paint Gallery</div>
 
-        <div class="cardFrame">
-          <img class="cardImg" src="assets/card.png" alt="Hu Xueao card artwork" />
-          <div class="shine"></div>
+        <div class="frame">
+          <div class="art">
+            <img src="assets/card.png" alt="Hu Xueao card" loading="eager" />
+            <div class="holo"></div>
+          </div>
         </div>
 
         <div class="caption">
+          <span>Centerpiece: a collectible moment.</span>
           <span><a href="https://huxueao.com" target="_blank" rel="noreferrer">huxueao.com</a></span>
         </div>
       </div>
 
-      <!-- 右：文案与入口 -->
+      <!-- 右：画廊说明牌（更好看） -->
       <div class="panel intro">
         <div>
-          <h1 class="title">Hello, World.</h1>
-          <div class="sub">
-            灵动万象，虚怀若谷
-            这里会逐步展示我的思考、故事与体验。
+          <div class="kicker">
+            <span>Personal site · 作品与记录</span>
+            <span class="tag">Oil-paint mood</span>
           </div>
 
-          <div class="hello">
-            <p class="codeLine">print("Hello, World — with a painterly soul.")</p>
-            <p class="codeLine"># Art × Code × Curiosity</p>
+          <h1 class="headline">Hello, World.</h1>
+
+          <div class="lead">
+            我把“Hello World”做成了一张卡：像展签一样简洁，像油画一样有温度。
+            这里会放下我在 <b>代码</b>、<b>设计</b> 与 <b>长期兴趣</b> 之间的探索。
+          </div>
+
+          <div class="quote">
+            <p class="mono">print("Hello, World — with a painterly soul.")</p>
+            <p># Art × Code × Curiosity</p>
+          </div>
+
+          <div class="grid">
+            <div class="item">
+              <div class="icon">✦</div>
+              <div>
+                <b>正在做</b>
+                <span>把个人网站做成一个能长期生长的“作品集 + 日记”。</span>
+              </div>
+            </div>
+
+            <div class="item">
+              <div class="icon">⟡</div>
+              <div>
+                <b>关注方向</b>
+                <span>Web / 视觉表达 / AI 辅助创作（以及任何让我变强的东西）。</span>
+              </div>
+            </div>
+
+            <div class="item">
+              <div class="icon">✉</div>
+              <div>
+                <b>联系我</b>
+                <span>如果你也喜欢这种风格：欢迎发邮件聊聊。</span>
+              </div>
+            </div>
           </div>
 
           <div class="actions">
-            <!-- 你可以把这些链接改成自己的 -->
+            <!-- 改成你自己的链接 -->
             <a class="btn primary" href="https://github.com/huxueao" target="_blank" rel="noreferrer">GitHub</a>
             <a class="btn" href="mailto:hello@huxueao.com">Email</a>
-            <a class="btn" href="#about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'}); return false;">About</a>
           </div>
         </div>
 
-        <div id="about" class="footer">
-          <span class="pill">Built on Cloudflare Pages</span>
+        <div class="footer">
+          <span class="pill">Cloudflare Pages</span>
           <span>© <span id="y"></span> Hu Xueao</span>
         </div>
       </div>
