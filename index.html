@@ -1,10 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Hu Xueao</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Poppins:wght@300&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:
+        radial-gradient(circle at 20% 30%, #f5e6d3, transparent 40%),
+        radial-gradient(circle at 80% 70%, #d8c3a5, transparent 40%),
+        linear-gradient(135deg,#2c2c2c,#1a1a1a);
+    color:white;
+    font-family:'Poppins',sans-serif;
+    overflow:hidden;
+}
+
+/* 油画模糊质感 */
+body::before{
+    content:"";
+    position:absolute;
+    width:120%;
+    height:120%;
+    background:url("https://images.unsplash.com/photo-1549880338-65ddcdfd017b");
+    background-size:cover;
+    background-position:center;
+    filter:blur(40px) brightness(0.6);
+    z-index:-1;
+    animation:slowMove 40s infinite alternate linear;
+}
+
+@keyframes slowMove{
+    from{transform:scale(1);}
+    to{transform:scale(1.2);}
+}
+
+.container{
+    text-align:center;
+    backdrop-filter:blur(10px);
+    background:rgba(255,255,255,0.05);
+    padding:60px;
+    border-radius:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+
+h1{
+    font-family:'Playfair Display',serif;
+    font-size:64px;
+    margin:0;
+    letter-spacing:2px;
+}
+
+.subtitle{
+    margin-top:20px;
+    font-size:20px;
+    opacity:0.8;
+}
+
+.line{
+    width:60px;
+    height:2px;
+    background:white;
+    margin:30px auto;
+    opacity:0.5;
+}
+
+.footer{
+    margin-top:30px;
+    font-size:14px;
+    opacity:0.6;
+}
+
+</style>
 </head>
 
 <body>
-<h1>Hello world </h1>
+
+<div class="container">
+
+<h1>Hello, World.</h1>
+
+<div class="line"></div>
+
+<p class="subtitle">
+Welcome to Hu Xueao's personal universe.
+</p>
+
+<div class="footer">
+© 2026 Hu Xueao
+</div>
+
+</div>
+
 </body>
 </html>
