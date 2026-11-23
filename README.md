@@ -9,7 +9,7 @@ A personal publication and playable experiment index for Hu Xueao. English inter
 - **Strata** at `/play/strata`: three expeditions, private strategy decks, a shared mine made from both 15-card packs, excavation, economy, crew combat, scoring, mulligan, rules, log, and browser saves.
 - Cloudflare D1 publication storage. Signed Cloudflare Access JWTs protect the owner workspace. The production handler has no development login bypass.
 
-The live domain is not changed merely by checking out this branch. Finish account configuration before merging or deploying production. No fictional articles are seeded.
+The live domain is not changed merely by checking out this branch. No fictional articles are seeded. The Pages project, build settings, and separate production/preview D1 databases are provisioned. Owner sign-in still requires the Access application described below; the workspace stays locked until it is configured.
 
 ## Local preview
 
@@ -27,7 +27,7 @@ Open **http://127.0.0.1:4321**. Use **http://127.0.0.1:4321/dev/login** for the 
 The repository's GitHub deployment check identifies the project as **`huxueao-site`**. Keep its existing custom-domain connection.
 
 1. Sign in with `npx wrangler login`. Inspect and back up the current Pages bindings/variables before adopting `wrangler.jsonc` as the configuration source of truth. Preserve any unrelated settings.
-2. Create a D1 database with `npx wrangler d1 create oblique`. Replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` in `wrangler.jsonc`, then run `npm run db:remote`. If a database already exists, inspect and reuse it rather than creating a duplicate.
+2. The `oblique` production database and `oblique-preview` preview database already exist, with their initial schema applied. Their IDs are in `wrangler.jsonc`. Apply future production migrations with `npm run db:remote`; apply preview migrations with `npx wrangler d1 migrations apply oblique-preview --remote --env preview`. Do not recreate these databases.
 3. In Cloudflare Zero Trust, create a **self-hosted Access application** protecting `huxueao.com/admin*` and `huxueao.com/api/admin/*`. Add an Allow policy for your own email only, with email one-time PIN or your preferred identity provider. Configure every hostname that should support owner login, including `www` if used. The Worker independently verifies signature, issuer, audience, expiration, and the exact owner email; alternate unprotected hostnames remain locked.
 4. Add these Pages environment variables/secrets for production and any authorized preview:
 
@@ -37,8 +37,8 @@ The repository's GitHub deployment check identifies the project as **`huxueao-si
    | `ACCESS_AUD` | Access application's audience tag |
    | `OWNER_EMAIL` | The exact allowed email address |
 
-   `SITE_URL` and `SITE_NAME` are in `wrangler.jsonc`. Never put an API token in public JavaScript or this repository. Use a separate preview database if enabling an editable preview workspace; configure it under `env.preview.d1_databases`.
-5. Set the existing Pages build command to **`npm run build:pages`**, output directory to **`dist`**, and Node version to **24**. The build bundles `worker/index.js` as the Pages advanced-mode `dist/_worker.js`, copies only `public/`, and routes all requests through the Worker. Development files and credentials are never deployed.
+   `SITE_URL`, `SITE_NAME`, and `NODE_VERSION` are in `wrangler.jsonc`; `OWNER_EMAIL` is configured as a Pages secret. Never put an API token in public JavaScript or this repository. The preview database is isolated under `env.preview.d1_databases`; enable its workspace only after protecting its hostname with Access.
+5. The existing Pages build command is **`npm run build:pages`**, the output directory is **`dist`**, and Node version is **24**. The build bundles `worker/index.js` as the Pages advanced-mode `dist/_worker.js`, copies only `public/`, and routes all requests through the Worker. Development files and credentials are never deployed. Both environments fail closed if their Worker cannot execute.
 6. Run `npm run deploy:preview`. Verify public pages, `/play/strata`, owner login, draft privacy, image uploads, and published articles. Then merge into `main` to use the existing Git deployment, or run `npm run deploy:production` after these checks. Missing Access configuration intentionally locks the workspace. Missing D1 is reported by the archive. The game has no server/database dependency.
 
 Cloudflare documentation: [Pages configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [advanced mode](https://developers.cloudflare.com/pages/functions/advanced-mode/), [D1 bindings](https://developers.cloudflare.com/pages/functions/bindings/#d1-databases), [Access JWT validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
