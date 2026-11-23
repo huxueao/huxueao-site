@@ -51,7 +51,7 @@ export function validateEntry(data) {
 }
 
 function accessPage(message, status) {
-  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Owner access — Oblique</title><link rel="stylesheet" href="/style.css"><main class="access-page"><a class="eyebrow" href="/">HUXUEAO.COM</a><h1>Owner access.</h1><p>${escapeHTML(message)}</p><p>Writing and experiments are available without signing in.</p><a href="/">Return to the index</a></main></html>`, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Owner access — Janus</title><link rel="stylesheet" href="/style.css"><main class="access-page"><a class="eyebrow" href="/">HUXUEAO.COM</a><h1>Owner access.</h1><p>${escapeHTML(message)}</p><p>Writing and projects are available without signing in.</p><a href="/">Return home</a></main></html>`, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
 }
 
 export function createHandler({ authenticate = verifyAccess } = {}) {
@@ -73,7 +73,7 @@ export function createHandler({ authenticate = verifyAccess } = {}) {
 
 async function dispatch(request, env, authenticate) {
   const url = new URL(request.url), path = url.pathname;
-  if (path === '/favicon.ico') return Response.redirect(new URL('/assets/favicon.svg',url),302);
+  if (path === '/favicon.ico') return Response.redirect(new URL('/assets/janus-coin.png',url),302);
   const admin = path === '/admin' || path.startsWith('/admin/') || path === '/admin.html' || path.startsWith('/api/admin/');
   let identity;
   if (admin) {
@@ -89,7 +89,7 @@ async function dispatch(request, env, authenticate) {
   if (path === '/api/content' && request.method === 'GET') {
     if (!env.DB) return json({ error: 'The publication is being set up. Please check back shortly.' }, 503);
     const { results } = await env.DB.prepare("SELECT * FROM entries WHERE status = 'published' ORDER BY featured DESC, published_at DESC").all();
-    return json({ entries: results.map(publicEntry), preview: env.DEMO_CONTENT === 'true', site: { name: env.SITE_NAME || 'OBLIQUE' } }, 200, { 'Cache-Control': 'no-cache' });
+    return json({ entries: results.map(publicEntry), preview: env.DEMO_CONTENT === 'true', site: { name: env.SITE_NAME || 'JANUS' } }, 200, { 'Cache-Control': 'no-cache' });
   }
   if (path.startsWith('/media/') && ['GET','HEAD'].includes(request.method)) {
     const id = path.slice(7);
@@ -148,19 +148,21 @@ async function dispatch(request, env, authenticate) {
   if (path === '/sitemap.xml') {
     const base = env.SITE_URL || url.origin;
     const { results = [] } = env.DB ? await env.DB.prepare("SELECT kind,slug,updated_at FROM entries WHERE status='published'").all() : {};
-    const paths = ['/', '/writing', '/experiments', '/index', '/about'].map(p => `<url><loc>${escapeHTML(base + p)}</loc></url>`);
+    const paths = ['/', '/writing', '/projects', '/play/strata'].map(p => `<url><loc>${escapeHTML(base + p)}</loc></url>`);
     for (const row of results) paths.push(`<url><loc>${escapeHTML(base + '/entry/' + row.slug)}</loc><lastmod>${row.updated_at.slice(0,10)}</lastmod></url>`);
     return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.join('')}</urlset>`, { headers: { 'Content-Type': 'application/xml' } });
   }
   if (!['GET','HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
   if (admin) return env.ASSETS.fetch(new Request(new URL('/admin',url), request));
-  const routes = ['/', '/writing','/experiments','/index','/about'];
+  const redirects = {'/experiments':'/projects','/index':'/','/about':'/'};
+  if (redirects[path]) return new Response(null,{status:308,headers:{Location:redirects[path]}});
+  const routes = ['/', '/writing','/projects'];
   if (routes.includes(path) || path.startsWith('/entry/') || path.startsWith('/play/')) {
-    let title = 'Oblique — A personal index by Hu Xueao', description = 'Writing, small experiments and things worth noticing.';
+    let title = 'Janus - Hu Xueao', description = 'Writing, projects, and games by Hu Xueao.';
     if (path.startsWith('/entry/')) {
       const row = await env.DB?.prepare("SELECT title,excerpt FROM entries WHERE slug=? AND status='published'").bind(path.slice(7)).first();
       if (!row) return accessPage('This page has not been published, or has moved.',404);
-      title = `${row.title} — Oblique`; description = row.excerpt;
+      title = `${row.title} — Janus`; description = row.excerpt;
     }
     const asset = await env.ASSETS.fetch(new Request(new URL('/',url), request));
     if (!asset.ok) return asset;

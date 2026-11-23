@@ -9,7 +9,7 @@
     "database_id": "697f70e7-975f-408e-becd-b818692739ba",
     "migrations_dir": "migrations"
   }],
-  "vars": { "SITE_URL": "https://huxueao.com", "SITE_NAME": "OBLIQUE", "NODE_VERSION": "24" },
+  "vars": { "SITE_URL": "https://huxueao.com", "SITE_NAME": "JANUS", "NODE_VERSION": "24" },
   "env": {
     "preview": {
       "d1_databases": [{
@@ -20,7 +20,7 @@
       }],
       "vars": {
         "SITE_URL": "https://codex-oblique-rebuild.huxueao-site.pages.dev",
-        "SITE_NAME": "OBLIQUE",
+        "SITE_NAME": "JANUS",
         "NODE_VERSION": "24"
       }
     }

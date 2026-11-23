@@ -1,5 +1,5 @@
 {
-  "name": "huxueao-oblique",
+  "name": "huxueao-janus",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "dev:cloudflare": "npm run build:pages && wrangler pages dev dist",
     "test": "node --test tests/*.test.mjs",
     "check": "node scripts/check.mjs",
-    "test:browser": "node scripts/browser-check.mjs",
-    "deploy:preview": "npm run build:pages && wrangler pages deploy dist --project-name huxueao-site --branch codex/oblique-rebuild",
+    "test:browser": "node scripts/janus-browser-check.mjs",
+    "deploy:preview": "npm run build:pages && wrangler pages deploy dist --project-name huxueao-site --branch codex/janus-redesign",
     "deploy:production": "npm run build:pages && wrangler pages deploy dist --project-name huxueao-site --branch main",
     "build:pages": "node scripts/build-pages.mjs",
     "db:local": "wrangler d1 migrations apply oblique --local",
