@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "huxueao-site",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-11-21",
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "oblique",
+    "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+    "migrations_dir": "migrations"
+  }],
+  "vars": { "SITE_URL": "https://huxueao.com", "SITE_NAME": "OBLIQUE" }
+}
