@@ -1,51 +1,75 @@
-import { escapeHTML as esc,markdown,mascot,date,safeLink } from './format.js';
-const main=document.querySelector('#main');
-let entries=[],loadError='',gameCleanup=null,filter='all';
-const builtIn={id:'strata',kind:'project',title:'Strata',slug:'strata',excerpt:'A two-player excavation card game. Build your expedition, share a mine, and play against the Guide.',tags:['game','cards','programmatic AI'],href:'/play/strata'};
-const link=e=>e.href||`/entry/${e.slug}`;
-const tags=e=>`<div class="tags">${e.tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div>`;
-const rows=list=>list.map(e=>`<a class="entry-row" data-nav href="${esc(link(e))}"><span class="entry-date">${e.id==='strata'?'PLAYABLE<br>EXPERIMENT':esc(date(e.published_at))}</span><div><h3>${esc(e.title)}</h3>${e.excerpt?`<p>${esc(e.excerpt)}</p>`:''}</div><span class="entry-mark" aria-hidden="true">+</span></a>`).join('');
-const errorNote=()=>loadError?`<p class="notice">The writing archive is temporarily unavailable. You can still play Strata. <button class="text-button" data-retry>Retry loading</button></p>`:'';
+import { escapeHTML as esc, markdown, date, safeLink } from './format.js';
+import { t, getLanguage, languageButton, bindLanguageButton } from './i18n.js';
+import { mountMascot } from './mascot.js';
 
-function home(){
-  const articles=entries.filter(e=>e.kind==='article').slice(0,3);
-  return `<section class="home-intro"><h1>An index of<br><em>possible worlds.</em></h1><aside><span class="eyebrow">WRITING · EXPERIMENTS · PLAY</span><p>A place for considered words, small inventions, and paths that lead somewhere unexpected.</p></aside></section>
-  <section class="hero" aria-labelledby="hero-title"><div class="hero-art"><img src="/assets/doorway.png" alt="A solitary stone doorway in a misty, pixel-dithered landscape" fetchpriority="high"><span class="image-caption">THERE IS SOMETHING ON THE OTHER SIDE.</span></div><div class="hero-copy"><span class="eyebrow">FROM THE EXPERIMENTS INDEX</span><h2 id="hero-title">Below the<br>surface.</h2><p>Two explorers. One shared mine.<br>What you unearth may be worth keeping. Or bringing back to life.</p><div class="feature-meta"><a class="button primary" data-nav href="/play/strata">Play Strata</a><span>A CARD GAME<br>YOU × THE GUIDE</span></div></div></section>
-  <p class="margin-note">Curiosity is a way in.</p>${errorNote()}
-  <div class="home-bottom"><section><div class="section-title"><h2>WRITING</h2><a href="/writing" data-nav>All entries</a></div>${articles.length?rows(articles):`<div class="empty-writing"><h3>The first page<br>is still blank.</h3><p>Essays and field notes will appear here as they are published.</p></div>`}</section><section><div class="section-title"><h2>ON THE WORKBENCH</h2><a href="/experiments" data-nav>Explore</a></div><div class="experiment-mini"><div><span class="eyebrow">INTERACTIVE / v0.1</span><h3><a href="/play/strata" data-nav>Strata</a></h3><p>A small world with a finite depth. An excavation game for one curious human.</p></div><a class="mini-pixels" href="/play/strata" data-nav aria-label="Play Strata">◈</a></div><span class="eyebrow muted">NO SIGN-UP. YOUR EXPEDITION STAYS IN THIS BROWSER.</span></section></div>`;
+const main = document.querySelector('#main');
+let entries = [], loadError = false, gameCleanup = null, renderId = 0;
+const entryLink = entry => `/entry/${encodeURIComponent(entry.slug)}`;
+const writing = () => entries.filter(e => ['article', 'fragment'].includes(e.kind));
+function shell() {
+  document.documentElement.lang = getLanguage() === 'zh' ? 'zh-CN' : 'en';
+  document.querySelector('.skip-link').textContent = t('Skip to content', '跳到正文');
+  document.querySelector('#site-header').innerHTML = `<a class="brand" href="/" data-nav aria-label="${t('Janus home', 'Janus 首页')}"><img class="brand-coin" src="/assets/janus-coin.png" alt="${t('Pixel silver coin showing the two faces of Janus', '像素风格的双面神 Janus 银币')}" width="112" height="112"><span>Janus</span></a><div class="header-right"><nav class="site-nav" aria-label="${t('Main navigation', '主导航')}"><a href="/writing" data-nav>${t('Writing', '文章')}</a><a href="/projects" data-nav>${t('Projects', '项目')}</a></nav>${languageButton()}</div>`;
+  document.querySelector('#site-footer').innerHTML = `<span>Janus <span class="footer-separator">/</span> Hu Xueao</span><a href="/admin">${t('Sign in', '登录后台')}</a>`;
+  activeNav();
 }
-function listing(){const list=entries.filter(e=>e.kind==='article'||e.kind==='fragment');return `<header class="page-heading"><div><span class="eyebrow">WORDS / FIELD NOTES</span><h1>Writing.</h1></div><p>Thoughts given a little more room.</p></header>${errorNote()}<section class="listing">${list.length?rows(list):`<div class="empty-state"><h2>Nothing published. Yet.</h2><p>This is an open notebook. New essays and shorter fragments will be collected here.</p></div>`}</section>`;}
-function experiments(){return `<header class="page-heading"><div><span class="eyebrow">SMALL SYSTEMS / OPEN ENDS</span><h1>Experiments.</h1></div><p>Things you can enter, alter, and play.</p></header>${errorNote()}<div class="project-grid"><article class="project"><a href="/play/strata" data-nav class="project-picture strata-cover" aria-label="Play Strata"><span aria-hidden="true">◆ ◇ ✳</span></a><div class="project-info"><span class="eyebrow">PLAYABLE / BROWSER GAME</span><h2>Strata</h2><p>${esc(builtIn.excerpt)}</p>${tags(builtIn)}<a class="button" href="/play/strata" data-nav>Enter the mine</a></div></article>${entries.filter(e=>e.kind==='project').map(e=>`<article class="project">${e.cover_url?`<a href="${esc(link(e))}" data-nav class="project-picture"><img src="${esc(safeLink(e.cover_url))}" alt="" loading="lazy"></a>`:''}<div class="project-info"><span class="eyebrow">EXPERIMENT</span><h2>${esc(e.title)}</h2><p>${esc(e.excerpt)}</p>${tags(e)}<a class="button" data-nav href="${esc(link(e))}">Open project</a></div></article>`).join('')}</div>`;}
-function archive(){return `<header class="page-heading"><div><span class="eyebrow">EVERYTHING, IN ONE PLACE</span><h1>The index.</h1></div><p>A collection with room to grow.</p></header>${errorNote()}<div class="filters"><div>${[['all','Everything'],['article','Writing'],['project','Experiments'],['fragment','Fragments']].map(([id,label])=>`<button class="filter-button" data-filter="${id}" aria-pressed="${filter===id}">${label}</button>`).join('')}</div><label><span class="sr-only">Filter the index</span><input type="search" id="index-search" placeholder="Find something…"></label></div><div id="index-list">${rows([builtIn,...entries].filter(e=>filter==='all'||e.kind===filter))}</div>`;}
-function about(){return `<header class="page-heading"><div><span class="eyebrow">A NOTE IN THE MARGIN</span><h1>About.</h1></div></header><div class="about-layout"><div class="prose"><p>I'm Hu Xueao. This is my personal corner of the internet.</p><p>Oblique brings together my writing and small software experiments. Some things here are meant to be read. Others make more sense when you start pressing buttons.</p><p>The collection is still taking shape.</p><hr><p><a href="/writing" data-nav>Read the writing</a><br><a href="/experiments" data-nav>Explore the experiments</a></p></div><aside class="about-side">${mascot()}<span class="eyebrow">RESIDENT ASSISTANT</span><h2>Meet the Guide.</h2><p>It knows its way around the index. It also plays cards.</p><p>The Guide is a little interface companion: a rectangle, two eyes, an angle. It is not a portrait of me.</p><p><button class="button" data-guide>Ask for directions</button></p></aside></div>`;}
-function article(slug){const e=entries.find(e=>e.slug===slug);if(!e)return `<div class="empty-state"><h1>Nothing at this address.</h1><p>This entry may be unpublished or the archive is unavailable.</p><p><a href="/index" data-nav>Return to the index</a></p></div>`;document.title=`${e.title} — Oblique`;return `<div class="article-layout"><aside class="article-aside"><a href="/${e.kind==='project'?'experiments':'writing'}" data-nav>${e.kind==='project'?'EXPERIMENT':'WRITING'}</a><p>${esc(date(e.published_at))}</p>${tags(e)}</aside><article class="article"><h1>${esc(e.title)}</h1>${e.excerpt?`<p class="standfirst">${esc(e.excerpt)}</p>`:''}${e.cover_url?`<img class="cover" src="${esc(safeLink(e.cover_url))}" alt="">`:''}<div class="prose">${markdown(e.body)}</div>${e.demo_url?`<p><a class="button primary" href="${esc(safeLink(e.demo_url))}" rel="noopener noreferrer">Open experiment</a></p>`:''}${e.source_url?`<p class="tags"><a href="${esc(safeLink(e.source_url))}" rel="noopener noreferrer">View source</a></p>`:''}</article></div>`;}
-
-async function render({focus=false}={}){
-  gameCleanup?.();gameCleanup=null;
-  const path=location.pathname;document.body.classList.toggle('game-page',path.startsWith('/play/'));document.title='Oblique — Hu Xueao';
-  for(const a of document.querySelectorAll('.site-nav a')){if(a.getAttribute('href')===path)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');}
-  if(path==='/play/strata'){
-    main.innerHTML='<p class="loading">Preparing an expedition…</p>';
-    const {mountGame}=await import('./game/ui.js');if(location.pathname===path)gameCleanup=mountGame(main);
-  }else main.innerHTML=path==='/'?home():path==='/writing'?listing():path==='/experiments'?experiments():path==='/index'?archive():path==='/about'?about():path.startsWith('/entry/')?article(decodeURIComponent(path.slice(7))):'<div class="empty-state"><h1>Page not found.</h1><p><a href="/" data-nav>Return home</a></p></div>';
-  if(focus)main.focus({preventScroll:true});
+function activeNav() {
+  document.querySelectorAll('.site-nav a').forEach(a => {
+    const active = a.pathname === location.pathname || (a.pathname === '/projects' && location.pathname.startsWith('/play/'));
+    if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
 }
-async function load(){try{const r=await fetch('/api/content',{cache:'no-store'});if(!r.ok)throw new Error();const data=await r.json();entries=data.entries;loadError='';}catch{loadError='unavailable';}await render();}
-const dialog=document.querySelector('#guide-dialog');
-document.querySelector('#guide-toggle').innerHTML=mascot()+'<span>GUIDE</span>';
-document.querySelector('#guide-face').innerHTML=mascot();
-function searchGuide(){const q=document.querySelector('#guide-search').value.trim().toLowerCase();const all=[{title:'The index',href:'/index',kind:'Browse'},{title:'Writing',href:'/writing',kind:'Read'},builtIn,{title:'About this place',href:'/about',kind:'About'},...entries];const found=all.filter(e=>!q||`${e.title} ${e.excerpt||''} ${(e.tags||[]).join(' ')}`.toLowerCase().includes(q)).slice(0,8);document.querySelector('#guide-results').innerHTML=found.length?found.map(e=>`<a class="guide-result" data-nav href="${esc(link(e))}">${esc(e.title)}<small>${esc(e.kind)}</small></a>`).join(''):'<p class="empty-state">Nothing here by that name. Try another word.</p>';}
-function openGuide(){if(!dialog.open)dialog.showModal();searchGuide();document.querySelector('#guide-search').focus();}
-document.addEventListener('click',event=>{
-  if(event.target.closest('[data-guide],#guide-toggle'))openGuide();
-  if(event.target.closest('[data-close-guide]'))dialog.close();
-  const a=event.target.closest('a[data-nav]');if(a&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&event.button===0){event.preventDefault();if(dialog.open)dialog.close();history.pushState({},'',a.getAttribute('href'));window.scrollTo(0,0);render({focus:true});}
-  const f=event.target.closest('[data-filter]');if(f){filter=f.dataset.filter;render();}
-  if(event.target.closest('[data-retry]'))load();
+const errorNote = () => loadError ? `<p class="notice" role="status">${t('Posts could not load. The game is still available.', '文章暂时无法加载，你仍然可以玩游戏。')} <button class="text-button" data-retry>${t('Try again', '重试')}</button></p>` : '';
+const emptyWriting = () => `<div class="empty-state"><h3>${t('No posts yet.', '还没有文章。')}</h3><p>${t('New posts will appear here.', '发布后的文章会显示在这里。')}</p></div>`;
+const rows = list => list.map(e => `<a class="entry-row" href="${entryLink(e)}" data-nav><h3>${esc(e.title)}</h3>${e.excerpt ? `<p>${esc(e.excerpt)}</p>` : ''}<time datetime="${esc(e.published_at || '')}">${esc(date(e.published_at, getLanguage()))}</time></a>`).join('');
+function strataCard() {
+  return `<article class="project-feature"><a class="project-art" href="/play/strata" data-nav aria-label="${t('Play Strata', '游玩 Strata')}"><img src="/assets/doorway.png" alt="${t('Pixel landscape with a stone doorway', '像素风格的石门与山野')}" width="1200" height="800"></a><div class="project-copy"><span class="eyebrow">${t('Card game', '卡牌游戏')}</span><h2><a href="/play/strata" data-nav>Strata</a></h2><p>${t('Dig for treasure. Build your crew. Play against the AI.', '挖掘宝藏，组建队伍，与电脑对战。')}</p><a class="button primary" href="/play/strata" data-nav>${t('Play', '开始游戏')}</a></div></article>`;
+}
+function home() {
+  return `<header class="home-heading"><h1>${t('Writing and small projects.', '文章与小作品。')}</h1><p>${t('By Hu Xueao.', 'Hu Xueao 的个人网站。')}</p></header>${errorNote()}<div class="home-grid"><section><div class="section-title"><h2>${t('Projects', '项目')}</h2><a href="/projects" data-nav>${t('View all', '查看全部')}</a></div>${strataCard()}</section><section class="home-writing"><div class="section-title"><h2>${t('Writing', '文章')}</h2><a href="/writing" data-nav>${t('View all', '查看全部')}</a></div>${writing().length ? rows(writing().slice(0, 4)) : emptyWriting()}</section></div>`;
+}
+function listing() {
+  return `<header class="page-heading"><h1>${t('Writing', '文章')}</h1><p>${t('Articles and notes.', '文章与随笔。')}</p></header>${errorNote()}<section class="listing">${writing().length ? rows(writing()) : emptyWriting()}</section>`;
+}
+function projects() {
+  return `<header class="page-heading"><h1>${t('Projects', '项目')}</h1><p>${t('Games and things I build.', '我做的游戏和小工具。')}</p></header>${errorNote()}<div class="project-grid">${strataCard()}${entries.filter(e => e.kind === 'project').map(e => `<article class="project-feature">${e.cover_url ? `<a class="project-art" href="${entryLink(e)}" data-nav><img src="${esc(safeLink(e.cover_url))}" alt="${esc(e.title)}" loading="lazy"></a>` : ''}<div class="project-copy"><h2>${esc(e.title)}</h2><p>${esc(e.excerpt)}</p><a class="button" href="${entryLink(e)}" data-nav>${t('Open project', '打开项目')}</a></div></article>`).join('')}</div>`;
+}
+function article(slug) {
+  const e = entries.find(e => e.slug === slug);
+  if (!e) return notFound();
+  document.title = `${e.title} — Janus`;
+  return `<article class="article"><a class="back-link" href="/${e.kind === 'project' ? 'projects' : 'writing'}" data-nav>${e.kind === 'project' ? t('All projects', '所有项目') : t('All writing', '所有文章')}</a><header><h1>${esc(e.title)}</h1>${e.excerpt ? `<p class="standfirst">${esc(e.excerpt)}</p>` : ''}<time>${esc(date(e.published_at, getLanguage()))}</time></header>${e.cover_url ? `<img class="cover" src="${esc(safeLink(e.cover_url))}" alt="">` : ''}<div class="prose">${markdown(e.body)}</div>${e.demo_url ? `<p class="article-action"><a class="button primary" href="${esc(safeLink(e.demo_url))}" rel="noopener noreferrer">${t('Open project', '打开项目')}</a></p>` : ''}${e.source_url ? `<p class="article-action"><a href="${esc(safeLink(e.source_url))}" rel="noopener noreferrer">${t('View code', '查看代码')}</a></p>` : ''}</article>`;
+}
+function notFound() { return `<section class="empty-state"><h1>${t('Page not found.', '页面不存在。')}</h1><p><a href="/" data-nav>${t('Go home', '返回首页')}</a></p></section>`; }
+async function render({focus = false} = {}) {
+  const id = ++renderId;
+  gameCleanup?.(); gameCleanup = null;
+  let path = location.pathname;
+  const oldRoutes = {'/experiments': '/projects', '/index': '/', '/about': '/'};
+  if (oldRoutes[path]) { path = oldRoutes[path]; history.replaceState({}, '', path); }
+  document.body.classList.toggle('game-page', path === '/play/strata');
+  document.title = path === '/play/strata' ? 'Strata — Janus' : 'Janus — Hu Xueao';
+  activeNav();
+  if (path === '/play/strata') {
+    main.innerHTML = `<p class="loading">${t('Loading game…', '正在加载游戏…')}</p>`;
+    const { mountGame } = await import('./game/ui.js');
+    if (id !== renderId) return;
+    gameCleanup = mountGame(main);
+  } else main.innerHTML = path === '/' ? home() : path === '/writing' ? listing() : path === '/projects' ? projects() : path.startsWith('/entry/') ? article(decodeURIComponent(path.slice(7))) : notFound();
+  if (focus) main.focus({preventScroll: true});
+}
+async function load() {
+  try { const r = await fetch('/api/content', {cache: 'no-store'}); if (!r.ok) throw new Error(); entries = (await r.json()).entries; loadError = false; }
+  catch { loadError = true; }
+  if (location.pathname !== '/play/strata') await render();
+}
+document.addEventListener('click', event => {
+  const a = event.target.closest('a[data-nav]');
+  if (a && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) {
+    event.preventDefault(); history.pushState({}, '', a.getAttribute('href')); window.scrollTo(0, 0); render({focus: true});
+  }
+  if (event.target.closest('[data-retry]')) load();
 });
-document.addEventListener('input',e=>{if(e.target.id==='guide-search')searchGuide();if(e.target.id==='index-search'){const q=e.target.value.toLowerCase();const found=[builtIn,...entries].filter(e=>(filter==='all'||e.kind===filter)&&`${e.title} ${e.excerpt} ${e.tags.join(' ')}`.toLowerCase().includes(q));document.querySelector('#index-list').innerHTML=found.length?rows(found):'<p class="empty-state">No matching entries.</p>';}});
-document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGuide();}});
-dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-window.addEventListener('popstate',()=>render({focus:true}));
-// The game can open immediately even while the writing archive is loading.
-if(location.pathname==='/play/strata'){render();fetch('/api/content').then(r=>r.ok?r.json():Promise.reject()).then(d=>{entries=d.entries;}).catch(()=>{loadError='unavailable';});}else load();
+window.addEventListener('popstate', () => render({focus: true}));
+window.addEventListener('janus:language', () => { shell(); if (location.pathname !== '/play/strata') render(); });
+bindLanguageButton(); shell(); mountMascot(document.querySelector('#floating-mascot')); render(); load();

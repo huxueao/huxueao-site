@@ -39,9 +39,9 @@ const server=http.createServer(async(req,res)=>{
     const chunks=[];let size=0;
     for await(const c of req){size+=c.length;if(size>1_100_000){res.writeHead(413);res.end('Too large');return;}chunks.push(c);}
     const request=new Request(url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});
-    const response=await handler.fetch(request,{DB,ASSETS:assets,SITE_URL:origin,SITE_NAME:'OBLIQUE'});
+    const response=await handler.fetch(request,{DB,ASSETS:assets,SITE_URL:origin,SITE_NAME:'JANUS'});
     res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
   }catch(error){console.error(error);res.writeHead(500);res.end('Local server error');}
 });
-server.listen(port,'127.0.0.1',()=>console.log(`Oblique preview: ${origin}\nLocal owner login: ${origin}/dev/login`));
+server.listen(port,'127.0.0.1',()=>console.log(`Janus preview: ${origin}\nLocal owner login: ${origin}/dev/login`));
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(()=>process.exit(0)));

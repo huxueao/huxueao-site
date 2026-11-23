@@ -1,15 +1,16 @@
-# Oblique — huxueao.com
+# Janus — huxueao.com
 
-A personal publication and playable experiment index for Hu Xueao. English interface; paper, serif typography, a ballpoint Guide mascot, and pixel-dithered artwork. Built for the existing **Cloudflare Pages project `huxueao-site`**.
+Hu Xueao's personal website: writing, projects, and the playable Strata card game. A paper background, readable serif headings, a pixelated Janus silver coin, and a floating hand-drawn face. Built for the existing Cloudflare Pages project **`huxueao-site`**.
 
-## Implemented
+## Features
 
-- Home, writing, experiments, searchable index, about, individual articles, and Guide search (`Ctrl/Cmd K`).
-- Owner workspace at `/admin`: articles, fragments, projects, Markdown preview, drafts, publishing, unpublishing, tags, cover uploads, browser recovery, and conflict detection.
-- **Strata** at `/play/strata`: three expeditions, private strategy decks, a shared mine made from both 15-card packs, excavation, economy, crew combat, scoring, mulligan, rules, log, and browser saves.
-- Cloudflare D1 publication storage. Signed Cloudflare Access JWTs protect the owner workspace. The production handler has no development login bypass.
-
-The live domain is not changed merely by checking out this branch. No fictional articles are seeded. The Pages project, build settings, and separate production/preview D1 databases are provisioned. Owner sign-in still requires the Access application described below; the workspace stays locked until it is configured.
+- Home, Writing, Projects, and individual posts. Old `/experiments`, `/index`, and `/about` links redirect to their replacements.
+- English/Chinese interface toggle, remembered in this browser. Article text stays in the language its author wrote it.
+- A draggable floating face, with hover and drag expressions. Arrow keys also move it. It has no chat or search function.
+- Owner editor at `/admin`: Markdown, preview, drafts, publishing, tags, cover uploads, local recovery, and conflict detection. Switching interface language preserves unsaved edits.
+- **Strata** at `/play/strata`: three preset decks, private hands and decks, a shared 30-card mine, digging, crew combat, scoring, mulligan, and local saves.
+- An interactive practice match teaches digging, playing crew, turn order, and combat without replacing a saved match. Card categories have names and colors; original pixel sprites and short particles accompany actions. Reduced-motion preferences are respected.
+- Cloudflare D1 stores publication content. Signed Cloudflare Access JWTs protect the editor and its API. Production has no development login bypass.
 
 ## Local preview
 
@@ -20,28 +21,28 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:4321**. Use **http://127.0.0.1:4321/dev/login** for the local owner workspace. This login only exists in `dev/server.mjs`, binds to loopback, and checks Host/Origin. Local articles are saved to `.local/oblique.sqlite`; games are saved in each browser's local storage. Neither is committed to Git.
+Open **http://127.0.0.1:4321**. The local owner login is **http://127.0.0.1:4321/dev/login**. It exists only in `dev/server.mjs`, binds to loopback, and checks Host and Origin. Local content is in `.local/oblique.sqlite`; its original name is retained to preserve content. `PORT` selects another local port.
 
-## Existing Cloudflare Pages setup
+## Existing Cloudflare deployment
 
-The repository's GitHub deployment check identifies the project as **`huxueao-site`**. Keep its existing custom-domain connection.
+The existing Pages project is `huxueao-site`, connected to GitHub and **huxueao.com**. A push to `main` triggers production deployment. Other branches create previews.
 
-1. Sign in with `npx wrangler login`. Inspect and back up the current Pages bindings/variables before adopting `wrangler.jsonc` as the configuration source of truth. Preserve any unrelated settings.
-2. The `oblique` production database and `oblique-preview` preview database already exist, with their initial schema applied. Their IDs are in `wrangler.jsonc`. Apply future production migrations with `npm run db:remote`; apply preview migrations with `npx wrangler d1 migrations apply oblique-preview --remote --env preview`. Do not recreate these databases.
-3. In Cloudflare Zero Trust, create a **self-hosted Access application** protecting `huxueao.com/admin*` and `huxueao.com/api/admin/*`. Add an Allow policy for your own email only, with email one-time PIN or your preferred identity provider. Configure every hostname that should support owner login, including `www` if used. The Worker independently verifies signature, issuer, audience, expiration, and the exact owner email; alternate unprotected hostnames remain locked.
-4. Add these Pages environment variables/secrets for production and any authorized preview:
+- Build command: `npm run build:pages`; output: `dist`; Node: 24.
+- The build bundles `worker/index.js` as `dist/_worker.js`, copies only `public/`, and routes requests through the Worker. Development credentials are never deployed.
+- Production D1 is `oblique`; preview D1 is `oblique-preview`. Both databases and the initial schema already exist. Keep their names and bindings in `wrangler.jsonc`; do not recreate them. Future migrations: `npm run db:remote`, or `npx wrangler d1 migrations apply oblique-preview --remote --env preview` for preview.
+- Owner login uses Cloudflare Access at `https://huxueao.cloudflareaccess.com`. Its self-hosted application protects `huxueao.com/admin*` and `huxueao.com/api/admin/*` with an Allow policy for the owner's email. The Worker independently verifies signature, issuer, audience, expiration, and owner email. Unprotected alternate hostnames cannot bypass this verification.
 
-   | Name | Value |
-   | --- | --- |
-   | `ACCESS_TEAM_DOMAIN` | `https://YOUR-TEAM.cloudflareaccess.com` |
-   | `ACCESS_AUD` | Access application's audience tag |
-   | `OWNER_EMAIL` | The exact allowed email address |
+The following values must be stored as **Pages secrets (`secret_text`)**, not plaintext dashboard variables. Wrangler is the configuration source of truth and can remove plaintext variables absent from its configuration during deployment.
 
-   `SITE_URL`, `SITE_NAME`, and `NODE_VERSION` are in `wrangler.jsonc`; `OWNER_EMAIL` is configured as a Pages secret. Never put an API token in public JavaScript or this repository. The preview database is isolated under `env.preview.d1_databases`; enable its workspace only after protecting its hostname with Access.
-5. The existing Pages build command is **`npm run build:pages`**, the output directory is **`dist`**, and Node version is **24**. The build bundles `worker/index.js` as the Pages advanced-mode `dist/_worker.js`, copies only `public/`, and routes all requests through the Worker. Development files and credentials are never deployed. Both environments fail closed if their Worker cannot execute.
-6. Run `npm run deploy:preview`. Verify public pages, `/play/strata`, owner login, draft privacy, image uploads, and published articles. Then merge into `main` to use the existing Git deployment, or run `npm run deploy:production` after these checks. Missing Access configuration intentionally locks the workspace. Missing D1 is reported by the archive. The game has no server/database dependency.
+| Secret | Value |
+| --- | --- |
+| `ACCESS_TEAM_DOMAIN` | Full HTTPS URL, such as `https://huxueao.cloudflareaccess.com` |
+| `ACCESS_AUD` | The Access application's audience tag |
+| `OWNER_EMAIL` | The exact permitted email address |
 
-Cloudflare documentation: [Pages configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [advanced mode](https://developers.cloudflare.com/pages/functions/advanced-mode/), [D1 bindings](https://developers.cloudflare.com/pages/functions/bindings/#d1-databases), [Access JWT validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
+Production owner login is configured. Preview has a separate database and remains locked unless its own Access hostname and all required secrets are configured. Never expose API tokens or secrets in public JavaScript. `SITE_URL`, `SITE_NAME`, and `NODE_VERSION` remain in `wrangler.jsonc`.
+
+Run `npm run deploy:preview` for a manual preview, or merge a verified branch into `main` for the existing Git deployment. `npm run deploy:production` is also available for explicitly authorized manual releases. Verify public pages, game, content API, and the owner login redirect after publishing. Both environments fail closed if their Worker cannot execute.
 
 ## Verification
 
@@ -49,29 +50,29 @@ Cloudflare documentation: [Pages configuration](https://developers.cloudflare.co
 npm run check
 npm test
 npm run build:pages
-# With the local server running, and Chrome installed:
+# With the local server running and Chrome installed:
 npm run test:browser
 ```
 
-`CHROME_PATH` overrides the browser executable. Browser checks cover desktop/mobile overflow, Guide navigation, actual AI turns, save/reload, login, drafting, preview, publishing, reading, unpublishing, and anonymous admin rejection. Screenshots go to `.local/screenshots`.
+`TEST_BASE` overrides the local URL; `CHROME_PATH` overrides the Chrome executable. Browser checks cover English/Chinese persistence, hover and drag, the complete tutorial on desktop and mobile, tutorial save isolation, real AI turns, reload, rules, reduced motion, and drafting/publishing/unpublishing. Browser tests create draft posts with the prefix `janus-browser-check-` in the local database. Screenshots go to `.local/screenshots`.
 
-The engine suite plays 270 seeded matches across all nine faction matchups. It verifies card conservation and resources after each action, plus blocking, summoning sickness, shared progress, final-round scoring, fatigue, and private AI observations. These are correctness checks, not a claim that competitive balance is final.
+The engine suite plays 270 seeded matches across all nine deck matchups, checks card conservation and resources after every action, and covers blocking, new crew, shared progress, final-round scoring, fatigue, and hidden information. Additional checks cover the tutorial's legal action sequence and translated game logs. These verify correctness, not final competitive balance.
 
 ## Game and AI
 
-Rules and card text are available inside the game. `public/game/cards.js` defines all cards and preconstructed expeditions. `engine.js` is a pure, validated state transition engine. `ai.js` ranks legal actions using the public board and its own hand. Its input excludes both private deck orders, the player's hand, future mine cards, and the random seed. Survey only exposes its user's three-card forecast. There are no LLM or external AI API calls, and no per-move token usage.
+`public/game/cards.js` defines card mechanics and preset decks. `catalog.js` supplies simple English/Chinese names and descriptions. `engine.js` validates state transitions. `ai.js` chooses legal moves using the public board and its own hand; it cannot see the player's hand, private deck orders, future mine cards, or seed. Survey reveals only its user's forecast.
 
-Version 0.1 has preconstructed decks, one AI difficulty, and local matches. It does not include multiplayer, cross-device saves, public user registration, or a custom deck editor. Starting another expedition replaces the browser's current match.
+The AI runs in the browser. **No LLM API calls or per-move token usage.** This version has one AI difficulty and local matches, with no multiplayer, cross-device saves, public user registration, or custom deck editor. New games replace the browser's saved match; tutorials never do. Existing `oblique-strata-v1` saves are read and migrated to `janus-strata-v1` on the next successful save.
 
-## Structure
+## Source layout
 
 | Path | Purpose |
 | --- | --- |
-| `public/` | Website, editor, browser game |
+| `public/` | Website, owner editor, browser game |
 | `worker/` | Authenticated API and Pages routing |
 | `migrations/` | D1 schema |
-| `dev/` | Loopback-only Node/SQLite preview |
-| `tests/` | Rules, security, simulation checks |
-| `scripts/` | Build, syntax, browser validation |
+| `dev/` | Loopback-only Node/SQLite server |
+| `tests/` | Game, translation, and security checks |
+| `scripts/` | Build and browser validation |
 
-Cover artwork was generated for this site. The Guide is an assistant and card-game opponent, not a portrait of the author. The original root `index.html` and `assets/` are legacy files; the new deployment serves only the generated `dist/` output.
+The coin and project cover were generated for this site; the pixel game sprites are original. The original root `index.html` and `assets/` are legacy files. Only the generated `dist/` directory is deployed.

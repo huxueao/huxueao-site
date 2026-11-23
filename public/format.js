@@ -22,5 +22,5 @@ export function markdown(source=''){
   }
   flush();if(code!==null)out+=`<pre><code>${escapeHTML(code.join('\n'))}</code></pre>`;return out;
 }
-export const mascot=(className='')=>`<svg class="mascot ${className}" viewBox="0 0 140 80" aria-hidden="true"><path d="M8 8 L132 7 L133 71 L7 72 Z"/><circle cx="49" cy="27" r="2.1"/><circle cx="100" cy="27" r="2.1"/><path d="M76 37 L58 53 L79 53"/></svg>`;
-export const date=value=>value?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',year:'numeric'}).format(new Date(value)):'';
+export const mascot=(className='')=>`<svg class="mascot ${className}" viewBox="0 0 140 80" aria-hidden="true"><path class="face-outline" d="M8 8 L45 7.4 L91 8 L132 7 L133 39 L132 71 L73 70.5 L7 72 L8 38 Z"/><g class="eyes-normal"><circle cx="49" cy="27" r="2.4"/><circle cx="100" cy="27" r="2.4"/></g><g class="eyes-hover"><path d="M40 28 L57 25 M91 25 L109 28"/><path class="brows" d="M39 19 L56 16 M92 16 L110 19"/></g><g class="eyes-drag"><path d="M40 24 L58 30 M40 30 L58 24 M91 24 L109 30 M91 30 L109 24"/><path class="brows" d="M39 17 L59 15 M91 15 L111 17"/></g><path d="M77 36 L58 53 L80 53"/></svg>`;
+export const date=(value,locale='en')=>value?new Intl.DateTimeFormat(locale==='zh'?'zh-CN':'en',{month:'short',day:'numeric',year:'numeric'}).format(new Date(value)):'';
