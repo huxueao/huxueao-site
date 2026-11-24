@@ -2,14 +2,14 @@
   "version": 2,
   "windowStart": "2025-11-25",
   "windowEnd": "2026-11-25",
-  "fetchedAt": "2026-11-24T16:55:00.492Z",
+  "fetchedAt": "2026-11-24T17:29:30.833Z",
   "assets": [
     {
       "symbol": "NVDA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764028800&period2=1795539300",
+      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764028800&period2=1795541370",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764028800&period2=1795539300&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764028800&period2=1795541370&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -2018,9 +2018,9 @@
     {
       "symbol": "TSLA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764028800&period2=1795539300",
+      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764028800&period2=1795541370",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764028800&period2=1795539300&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764028800&period2=1795541370&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -4029,9 +4029,9 @@
     {
       "symbol": "AAPL",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764028800&period2=1795539300",
+      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764028800&period2=1795541370",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764028800&period2=1795539300&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764028800&period2=1795541370&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -6043,7 +6043,7 @@
       "sourceUrl": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
       "requestUrls": [
         "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-25T00:00:00.000Z&end=2026-09-01T00:00:00.000Z",
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-01T00:00:00.000Z&end=2026-11-24T16:55:00.000Z"
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-01T00:00:00.000Z&end=2026-11-24T17:29:30.000Z"
       ],
       "interval": "1d",
       "candles": [
