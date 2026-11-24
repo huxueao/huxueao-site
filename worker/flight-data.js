@@ -45,22 +45,28 @@ export async function fetchFlightAsset(symbol,{now=new Date(),fetcher=fetch}={})
   }
   return {version:2,...window,fetchedAt:now.toISOString(),asOf:asset.candles.at(-1).date,isFallback:false,asset};
 }
-export async function flightMarketResponse(request,env,{now=new Date(),fetcher=fetch,cache=globalThis.caches?.default}={}){
+export function snapshotFlightAsset(snapshot,symbol,now=new Date()){
+  const asset=snapshot?.assets?.find(a=>a.symbol===symbol);
+  if(snapshot?.version!==2||!asset||!Number.isFinite(Date.parse(snapshot.fetchedAt)))throw Error('Snapshot missing');
+  checkCandles(asset.candles,snapshot,symbol);
+  const window=rollingWindow(now),age=now.getTime()-Date.parse(snapshot.fetchedAt);
+  if(age>=0&&age<=26*3600*1000){
+    const candles=asset.candles.filter(c=>c.date>=window.windowStart&&c.date<=window.windowEnd);
+    checkCandles(candles,window,symbol);
+    return {version:2,...window,fetchedAt:snapshot.fetchedAt,asOf:candles.at(-1).date,isFallback:false,asset:{...asset,candles}};
+  }
+  return {version:2,windowStart:snapshot.windowStart,windowEnd:snapshot.windowEnd,fetchedAt:snapshot.fetchedAt,asOf:asset.candles.at(-1).date,isFallback:true,asset};
+}
+export async function flightMarketResponse(request,env,{now=new Date(),cache=globalThis.caches?.default}={}){
   if(request.method!=='GET')return Response.json({error:'Method not allowed'},{status:405,headers:{Allow:'GET'}});
   const url=new URL(request.url),symbol=url.searchParams.get('symbol')||'NVDA';
   if(!SYMBOLS.includes(symbol))return Response.json({error:'Unknown asset'},{status:400});
   const window=rollingWindow(now),keyURL=new URL('/api/flight/market',url);keyURL.searchParams.set('symbol',symbol);keyURL.searchParams.set('date',window.windowEnd);const key=new Request(keyURL);
   try{const hit=await cache?.match(key);if(hit)return hit;}catch{}
   let data;
-  try{data=await fetchFlightAsset(symbol,{now,fetcher});}
-  catch{
-    try{
-      const r=await env.ASSETS.fetch(new Request(new URL('/flight/market-data.json',url)));if(!r.ok)throw Error('Snapshot missing');const snapshot=await r.json(),asset=snapshot.assets.find(a=>a.symbol===symbol);
-      if(snapshot.version!==2||!asset)throw Error('Snapshot missing');checkCandles(asset.candles,snapshot,symbol);
-      data={version:2,windowStart:snapshot.windowStart,windowEnd:snapshot.windowEnd,fetchedAt:snapshot.fetchedAt,asOf:asset.candles.at(-1).date,isFallback:true,asset};
-    }catch{return Response.json({error:'Latest market data is unavailable. Please try again.'},{status:503,headers:{'Cache-Control':'no-store'}});}
-  }
-  const response=Response.json(data,{headers:{'Cache-Control':data.isFallback?'public, max-age=120':'public, max-age=900'}});
+  try{const r=await env.ASSETS.fetch(new Request(new URL('/flight/market-data.json',url)));if(!r.ok)throw Error('Snapshot missing');data=snapshotFlightAsset(await r.json(),symbol,now);}
+  catch{return Response.json({error:'Market data is unavailable. Please try again.'},{status:503,headers:{'Cache-Control':'no-store'}});}
+  const response=Response.json(data,{headers:{'Cache-Control':'public, max-age=300'}});
   try{await cache?.put(key,response.clone());}catch{}
   return response;
 }

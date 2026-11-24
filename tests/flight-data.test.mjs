@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
-import {calendarDate,rollingWindow,parseYahoo,parseCoinbase,flightMarketResponse} from '../worker/flight-data.js';
+import {calendarDate,rollingWindow,parseYahoo,parseCoinbase,snapshotFlightAsset,flightMarketResponse} from '../worker/flight-data.js';
 const snapshot=JSON.parse(fs.readFileSync(new URL('../public/flight/market-data.json',import.meta.url),'utf8'));
 test('rolling dates use Singapore today, including midnight and leap years',()=>{
   assert.deepEqual(rollingWindow(new Date('2026-11-24T16:01:00Z')),{windowStart:'2025-11-25',windowEnd:'2026-11-25'});assert.deepEqual(rollingWindow(new Date('2024-02-29T01:00:00Z')),{windowStart:'2023-02-28',windowEnd:'2024-02-29'});assert.equal(calendarDate(new Date('2026-11-24T15:59:00Z')),'2026-11-24');
@@ -14,10 +14,15 @@ test('equity parsing excludes the open session and accepts the completed session
   assert.equal(parseYahoo(body,'NVDA',rollingWindow(now),now).at(-1).date,'2026-11-23');const later=new Date('2026-11-24T21:05Z');assert.equal(parseYahoo(body,'NVDA',rollingWindow(later),later).at(-1).date,'2026-11-24');
   body.chart.result[0].meta.currentTradingPeriod.regular={start:Date.parse('2026-11-25T14:30Z')/1000,end:Date.parse('2026-11-25T21:00Z')/1000};assert.equal(parseYahoo(body,'NVDA',rollingWindow(later),later).at(-1).date,'2026-11-24');
 });
-test('market endpoint limits assets, labels fallback snapshots, and reuses the cache',async()=>{
-  let fetches=0;const fetcher=async()=>{fetches++;throw Error('Unavailable');},store=new Map(),cache={match:async r=>store.get(r.url)?.clone(),put:async(r,s)=>store.set(r.url,s)},env={ASSETS:{fetch:async()=>Response.json(snapshot)}};
-  const request=new Request('https://example.com/api/flight/market?symbol=NVDA'),options={now:new Date(snapshot.fetchedAt),fetcher,cache};
-  const one=await flightMarketResponse(request,env,options),data=await one.json();assert.equal(one.status,200);assert.equal(data.isFallback,true);assert.equal(data.windowStart,snapshot.windowStart);assert.equal(data.asOf,snapshot.assets[0].candles.at(-1).date);await flightMarketResponse(request,env,options);assert.equal(fetches,1);
+test('synced data rolls at Singapore midnight and clearly labels delayed updates',()=>{
+  const fetched=new Date(snapshot.fetchedAt),tomorrow=new Date(fetched.getTime()+24*3600*1000),d=snapshotFlightAsset(snapshot,'NVDA',tomorrow);
+  assert.equal(d.isFallback,false);assert.equal(d.windowEnd,rollingWindow(tomorrow).windowEnd);assert.ok(d.asset.candles[0].date>=d.windowStart);assert.equal(d.fetchedAt,snapshot.fetchedAt);
+  const delayed=snapshotFlightAsset(snapshot,'BTC',new Date(fetched.getTime()+27*3600*1000));assert.equal(delayed.isFallback,true);assert.equal(delayed.windowEnd,snapshot.windowEnd);
+});
+test('market endpoint limits assets, loads synced data, and reuses the cache',async()=>{
+  let fetches=0;const store=new Map(),cache={match:async r=>store.get(r.url)?.clone(),put:async(r,s)=>store.set(r.url,s)},env={ASSETS:{fetch:async()=>{fetches++;return Response.json(snapshot);}}};
+  const request=new Request('https://example.com/api/flight/market?symbol=NVDA'),options={now:new Date(snapshot.fetchedAt),cache};
+  const one=await flightMarketResponse(request,env,options),data=await one.json();assert.equal(one.status,200);assert.equal(data.isFallback,false);assert.equal(data.windowStart,snapshot.windowStart);assert.equal(data.asOf,snapshot.assets[0].candles.at(-1).date);await flightMarketResponse(request,env,options);assert.equal(fetches,1);
   const bad=await flightMarketResponse(new Request('https://example.com/api/flight/market?symbol=https://example.org'),env,options);assert.equal(bad.status,400);assert.equal(fetches,1);
   const post=await flightMarketResponse(new Request(request,{method:'POST'}),env,options);assert.equal(post.status,405);
 });
