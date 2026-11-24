@@ -8,3 +8,10 @@
 - Keep interface copy simple and maintain English/Chinese switching.
 
 The coin changes were requested on 2026-11-24 for the next website update and are implemented in this release. No additional avatar change is currently queued.
+
+## Candle Flight camera and controls — 2026-11-25
+
+- Preserve raw body sizes and gaps on one fixed price scale; pan vertically instead of fitting a whole year to the screen.
+- Wide playfield, many more visible candles, narrower columns, smaller pilot and forgiving centre hitbox.
+- Hold to rise and release to glide, with smoother speed changes and reliable input release.
+- Preserve prior progress by migrating old saves to the last completed candle.
