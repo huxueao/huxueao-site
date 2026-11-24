@@ -1,0 +1,41 @@
+name: Update flight data
+on:
+  schedule:
+    # After Bitcoin's UTC close and the US close in summer and winter.
+    - cron: '17 0,20,21 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main, codex/candle-flight]
+    paths:
+      - .github/workflows/flight-data.yml
+      - scripts/refresh-flight-snapshot.mjs
+      - worker/flight-data.js
+permissions:
+  contents: write
+concurrency:
+  group: flight-data-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fetch the latest completed daily candles
+        run: node scripts/refresh-flight-snapshot.mjs
+      - name: Verify the full annual courses
+        run: node --test tests/flight.test.mjs tests/flight-data.test.mjs
+      - name: Publish the updated data
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git add public/flight/market-data.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update completed daily candles for Candle Flight'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main

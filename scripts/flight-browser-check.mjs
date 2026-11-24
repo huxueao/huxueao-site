@@ -1,0 +1,43 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const base=process.env.TEST_BASE||'http://127.0.0.1:4321';
+const snapshot=JSON.parse(await fs.readFile('public/flight/market-data.json','utf8'));
+const payload=s=>{const {assets,...meta}=snapshot,asset=assets.find(a=>a.symbol===s);return {...meta,asset,asOf:asset.candles.at(-1).date,isFallback:false};};
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+await fs.mkdir('.local/screenshots',{recursive:true});
+const errors=[],requests=[];let fallback=false;
+const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage();
+const mock=ctx=>ctx.route('**/api/flight/market?*',async route=>{const symbol=new URL(route.request().url()).searchParams.get('symbol');requests.push(symbol);await route.fulfill({json:{...payload(symbol),isFallback:fallback}});});
+await mock(context);
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+// Exercise the real RAF loop and DOM inputs. Rendering alone can be skipped
+// during the long annual run; no debug controls or automatic play ship.
+await page.addInitScript(()=>{let clock=0,id=0;const frames=new Map();window.requestAnimationFrame=cb=>{frames.set(++id,cb);return id;};window.cancelAnimationFrame=n=>frames.delete(n);window.__advanceFrame=()=>{clock+=1000/120;const current=[...frames.values()];frames.clear();for(const cb of current)cb(clock);};for(const method of ['fillRect','strokeRect','clearRect','fillText','drawImage','fill','stroke']){const fn=CanvasRenderingContext2D.prototype[method];CanvasRenderingContext2D.prototype[method]=function(...args){if(!window.__skipPaint)return fn.apply(this,args);};}});
+const overflow=async p=>assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal overflow');
+async function drive(until=999,fromSave=false){return page.evaluate(async({until,fromSave})=>{
+  const m=await import('/flight/model.js');let s;if(fromSave){s=m.restoreFlight(JSON.parse(localStorage.getItem('janus-candle-flight-run-v2'))).state;s.phase='running';}else{const data=await(await fetch('/api/flight/market?symbol=NVDA')).json();s=m.createFlight(m.makeCourse(data.asset));m.flap(s);}const canvas=document.querySelector('canvas');window.__skipPaint=true;window.__advanceFrame();let n=0;
+  while(s.phase==='running'&&s.score<until&&n++<120*1500){if(s.bird.vy>-180&&s.bird.y>m.nextGate(s).center+18){canvas.dispatchEvent(new KeyboardEvent('keydown',{code:'Space',bubbles:true}));m.flap(s);}m.step(s,1/120);window.__advanceFrame();}window.__skipPaint=false;for(let i=0;i<4;i++)window.__advanceFrame();return {phase:s.phase,score:s.score,shown:Number(document.querySelector('.flight-score b').textContent)};
+},{until,fromSave});}
+try{
+  await page.goto(base+'/play/candle-flight');await page.locator('[data-start-flight]').waitFor();await page.evaluate(()=>document.fonts.ready);await page.locator('.pilot-window img').first().evaluate(img=>img.decode());await page.evaluate(()=>window.__advanceFrame());await overflow(page);
+  assert.equal(await page.locator('.pilot-card').count(),4);assert.equal(await page.locator('.flight-months').count(),0);assert.ok((await page.locator('.flight-period').textContent()).includes(snapshot.windowStart));assert.ok((await page.locator('.flight-period').textContent()).includes(payload('NVDA').asOf));
+  await page.screenshot({path:'.local/screenshots/flight-desktop.png',fullPage:true});
+  for(const symbol of ['TSLA','AAPL','BTC','NVDA']){await page.locator(`[data-asset-choice="${symbol}"]`).click();await page.locator(`.flight[data-asset="${symbol}"]`).waitFor();assert.equal(await page.locator('[data-hud] strong').textContent(),symbol);assert.ok((await page.locator('.flight-score').textContent()).includes(String(payload(symbol).asset.candles.length)));}
+  await page.locator('[data-language]').click();assert.equal(await page.locator('html').getAttribute('lang'),'zh-CN');await page.locator('[data-language]').click();
+  await page.locator('[data-start-flight]').click();const played=await drive();assert.equal(played.phase,'cleared');assert.equal(played.shown,payload('NVDA').asset.candles.length);await page.getByRole('heading',{name:'YEAR CLEARED!'}).waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('janus-candle-flight-run-v2')),null);await page.screenshot({path:'.local/screenshots/flight-win.png',fullPage:true});
+  assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem('janus-candle-flight-best-v2'))[k],`NVDA:${snapshot.windowStart}:${snapshot.windowEnd}`),played.shown);
+  await page.locator('[data-retry-flight]').click();await page.evaluate(()=>{for(let i=0;i<160;i++)window.__advanceFrame();});await page.getByRole('heading',{name:'FLIGHT OVER'}).waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('janus-candle-flight-run-v2')),null);
+  await page.locator('[data-retry-flight]').click();assert.equal((await drive(40)).shown,40);await page.keyboard.press('KeyP');await page.getByRole('heading',{name:'PAUSED'}).waitFor();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('janus-candle-flight-run-v2')));assert.equal(saved.state.score,40);assert.equal(saved.data.windowEnd,snapshot.windowEnd);
+  await page.reload();await page.locator('[data-continue-flight]').waitFor();await page.locator('[data-continue-flight]').click();assert.equal(await page.locator('.flight-score b').textContent(),'40');
+  await page.locator('[data-language]').click();assert.equal(await page.locator('.flight-score b').textContent(),'40');assert.equal(await page.locator('.flight-overlay').isVisible(),false);await page.locator('[data-language]').click();
+  assert.equal((await drive(42,true)).shown,42);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.getByRole('heading',{name:'PAUSED'}).waitFor();
+  await page.locator('[data-hangar]').click();await page.locator('[data-continue-flight]').waitFor();fallback=true;await page.locator('[data-asset-choice="BTC"]').click();await page.locator('.flight[data-asset="BTC"]').waitFor();assert.ok((await page.locator('.flight-data-notice').textContent()).includes(snapshot.fetchedAt.slice(0,10)));fallback=false;await page.locator('[data-refresh]').click();await page.locator('.flight[data-asset="BTC"]').waitFor();assert.equal(await page.locator('.flight-data-notice').count(),0);
+  await page.locator('[data-language]').click();await page.setViewportSize({width:390,height:844});await page.evaluate(()=>window.__advanceFrame());await overflow(page);await page.screenshot({path:'.local/screenshots/flight-mobile-selection.png',fullPage:true});
+  await page.locator('[data-start-flight]').click();await page.locator('canvas').dispatchEvent('pointerdown',{button:0,isPrimary:true});await page.evaluate(()=>{for(let i=0;i<40;i++)window.__advanceFrame();});await overflow(page);assert.ok(await page.locator('.flight-lobby').isHidden());await page.screenshot({path:'.local/screenshots/flight-mobile-play.png',fullPage:true});await page.locator('[data-pause]').click();assert.equal(await page.locator('.flight-overlay').isVisible(),true);
+  await page.locator('.flight-top a').click();assert.equal(await page.locator('.flight').count(),0);assert.ok(!(await page.locator('body').getAttribute('class')).includes('flight-page'));await page.locator('.project-copy .button[href="/play/strata"]').click();await page.locator('[data-deck]').first().waitFor();
+  await page.goto(base);await page.locator('.brand-coin').evaluate(img=>img.decode());await overflow(page);await page.screenshot({path:'.local/screenshots/flight-home-mobile.png',fullPage:true});
+  const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,reducedMotion:'reduce'});await mock(mobile);const mp=await mobile.newPage();await mp.goto(base+'/play/candle-flight');await mp.locator('[data-start-flight]').tap();await mp.locator('canvas').tap();await mp.locator('[data-pause]').tap();await mp.getByRole('heading',{name:'PAUSED'}).waitFor();await overflow(mp);await mobile.close();
+  assert.ok(['NVDA','TSLA','AAPL','BTC'].every(s=>requests.includes(s)));assert.deepEqual(errors,[]);console.log('Annual flight browser checks passed: all assets and dates, full-year victory via keyboard, crash/retry, saved-run reload/continue, bilingual progress, explicit fallback/update, mobile touch/layout, and navigation.');
+}finally{await browser.close();}
