@@ -1,45 +1,59 @@
-import {WIDTH,HEIGHT,GATE_WIDTH,ASSETS} from './model.js';
+import {WIDTH,HEIGHT,BIRD_X,GATE_WIDTH,SPACING,PRICE_SCALE,ASSETS} from './model.js';
 import {t} from '../i18n.js';
 export function makeRenderer(canvas){
-  const ctx=canvas.getContext('2d',{alpha:false});canvas.width=WIDTH;canvas.height=HEIGHT;ctx.imageSmoothingEnabled=false;
-  const sheet=new Image();sheet.src='/assets/flight-pilots.png';let particles=[];
+  const ctx=canvas.getContext('2d',{alpha:false}),sheet=new Image();sheet.src='/assets/flight-pilots.png';let particles=[],viewWidth=WIDTH;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
-  function burst(x,y,color,count=10){if(reduce.matches)return;for(let i=0;i<count;i++)particles.push({x,y,vx:(Math.random()-.5)*145,vy:(Math.random()-.5)*160,life:.35+Math.random()*.25,color,size:2+Math.floor(Math.random()*3)});}
-  function pilot(symbol,x,y,size,angle=0){
+  const narrow=matchMedia('(max-width:760px)'),landscape=matchMedia('(orientation:landscape) and (max-height:600px)');
+  const targetWidth=()=>narrow.matches&&!(landscape.matches&&document.body.classList.contains('flight-running'))?640:WIDTH;
+  function resize(){viewWidth=targetWidth();if(canvas.width!==viewWidth||canvas.height!==HEIGHT){canvas.width=viewWidth;canvas.height=HEIGHT;}ctx.imageSmoothingEnabled=false;}
+  resize();window.addEventListener('resize',resize);
+  function burst(x,y,color,count=10){if(reduce.matches)return;for(let i=0;i<count;i++)particles.push({x,y,vx:-15+(Math.random()-.5)*85,vy:(Math.random()-.5)*80,life:.25+Math.random()*.25,color,size:2});}
+  function pilot(symbol,x,y,angle){
     ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.rotate(angle);ctx.imageSmoothingEnabled=false;
-    if(sheet.complete&&sheet.naturalWidth){const i=ASSETS[symbol].sprite,w=sheet.naturalWidth/2,h=sheet.naturalHeight/2;ctx.drawImage(sheet,(i%2)*w,Math.floor(i/2)*h,w,h,-size/2,-size/2,size,size);}
-    else{ctx.fillStyle=ASSETS[symbol].color;ctx.fillRect(-18,-18,36,36);ctx.fillStyle='#111b25';ctx.fillRect(-9,-5,5,5);ctx.fillRect(6,-5,5,5);ctx.fillRect(-5,8,13,3);}
+    if(sheet.complete&&sheet.naturalWidth){const i=ASSETS[symbol].sprite,w=sheet.naturalWidth/2,h=sheet.naturalHeight/2;ctx.drawImage(sheet,(i%2)*w,Math.floor(i/2)*h,w,h,-19,-19,38,38);}
+    else{ctx.fillStyle=ASSETS[symbol].color;ctx.fillRect(-10,-10,20,20);ctx.fillStyle='#111b25';ctx.fillRect(-5,-4,3,3);ctx.fillRect(3,-4,3,3);}
     ctx.restore();
   }
+  const labelPrice=p=>p>=1000?'$'+(p/1000).toFixed(1)+'k':'$'+p.toFixed(p<20?1:0);
   function draw(state,symbol,dt=0){
-    const accent=ASSETS[symbol].color,elapsed=state.time,travel=state.distance;
-    const visible=state.course.slice(Math.max(0,state.score-2),state.score+5);
-    ctx.fillStyle='#0c1420';ctx.fillRect(0,0,WIDTH,HEIGHT);
-    ctx.strokeStyle='#1c2b39';ctx.lineWidth=1;ctx.beginPath();for(let y=40;y<HEIGHT;y+=40){ctx.moveTo(0,y+.5);ctx.lineTo(WIDTH,y+.5);}for(let x=-(travel*.16%40);x<WIDTH;x+=40){ctx.moveTo(Math.round(x)+.5,0);ctx.lineTo(Math.round(x)+.5,HEIGHT);}ctx.stroke();
-    // Fixed city skyline and a faint price trace: decoration never changes collisions.
-    ctx.fillStyle='#132431';for(let i=0;i<16;i++){const x=i*38-(travel*.08%38),h=24+(i*53%90);ctx.fillRect(x,HEIGHT-20-h,26,h);ctx.fillStyle='#213d46';for(let y=HEIGHT-28;y>HEIGHT-h;y-=14)ctx.fillRect(x+7,y,4,4);ctx.fillStyle='#132431';}
-    ctx.strokeStyle='#31504d';ctx.lineWidth=2;ctx.beginPath();visible.forEach((g,i)=>{const x=g.x-travel;if(i===0)ctx.moveTo(x,g.center);else ctx.lineTo(x,g.center);});ctx.stroke();
-    for(const g of visible){
-      const x=Math.round(g.x-travel),left=x-GATE_WIDTH/2;if(left>WIDTH+20||left+GATE_WIDTH<0)continue;
-      const color=g.rising?'#9ce7a2':'#ff8795',dark=g.rising?'#173c37':'#482a3b',top=Math.round(g.top),bottom=Math.round(g.bottom);
-      ctx.fillStyle=dark;ctx.fillRect(left,20,GATE_WIDTH,top-20);ctx.fillRect(left,bottom,GATE_WIDTH,HEIGHT-20-bottom);
-      ctx.fillStyle=g.rising?'#28564b':'#64394c';for(let y=25;y<HEIGHT-20;y+=14){if(y+3<top||y>bottom)ctx.fillRect(left+3,y,GATE_WIDTH-6,3);}
-      ctx.fillStyle=color;ctx.fillRect(x-2,Math.max(25,Math.round(g.highY)-12),4,Math.max(0,top-Math.max(25,Math.round(g.highY)-12)));ctx.fillRect(x-2,bottom,4,Math.max(0,Math.min(HEIGHT-25,g.lowY+12)-bottom));
-      ctx.globalAlpha=.08;ctx.fillStyle=color;ctx.fillRect(left,top,GATE_WIDTH,bottom-top);ctx.globalAlpha=1;
-      ctx.fillStyle=color;ctx.fillRect(left-4,top-4,GATE_WIDTH+8,4);ctx.fillRect(left-4,bottom,GATE_WIDTH+8,4);
-      ctx.fillRect(left-4,top,4,9);ctx.fillRect(left+GATE_WIDTH,top,4,9);ctx.fillRect(left-4,bottom-9,4,9);ctx.fillRect(left+GATE_WIDTH,bottom-9,4,9);
-      ctx.fillStyle='#e3eee7';ctx.font='12px monospace';ctx.textAlign='center';ctx.fillText(g.date.slice(5).replace('-','/'),x,HEIGHT-5);
-      if(g.index===state.lastPassed+1){ctx.fillStyle=color;ctx.font='bold 15px monospace';ctx.fillText(g.rising?t('UP','涨'):t('DOWN','跌'),x,top-14);}
+    if(viewWidth!==targetWidth())resize();
+    const accent=ASSETS[symbol].color,travel=state.distance,cam=state.cameraY,offset=viewWidth*.18-BIRD_X,px=state.bird.x+offset,mobile=viewWidth<800;
+    const visible=state.course.slice(Math.max(0,state.score-2),state.score+Math.ceil(viewWidth/SPACING)+3).filter(g=>g.x-travel+offset>-90&&g.x-travel+offset<viewWidth+90),reference=state.course[0]?.reference||100,ticks=[];
+    ctx.fillStyle='#0b1420';ctx.fillRect(0,0,viewWidth,HEIGHT);
+    // The price grid scrolls with the same linear world axis as the candles.
+    const raw=reference*.05,power=10**Math.floor(Math.log10(raw)),tick=[1,2,5,10].find(n=>n*power>=raw)*power;
+    const lowPrice=reference*(1-(cam+HEIGHT)/PRICE_SCALE),highPrice=reference*(1-cam/PRICE_SCALE);
+    ctx.lineWidth=1;ctx.font=`${mobile?21:14}px monospace`;ctx.textAlign='right';
+    for(let price=Math.ceil(lowPrice/tick)*tick;price<=highPrice;price+=tick){
+      const y=Math.round((1-price/reference)*PRICE_SCALE-cam);ctx.strokeStyle='#21313e';ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(viewWidth,y+.5);ctx.stroke();
+      if(price>0)ticks.push({price,y});
     }
-    ctx.fillStyle='#253442';ctx.fillRect(0,0,WIDTH,20);ctx.fillRect(0,HEIGHT-20,WIDTH,20);ctx.fillStyle=accent;for(let x=0;x<WIDTH;x+=22){ctx.fillRect(x,16,10,4);ctx.fillRect(x,HEIGHT-20,10,4);}
-    const by=state.bird.y+(state.phase==='ready'&&!reduce.matches?Math.sin(performance.now()/350)*5:0);
-    const wing=state.phase==='running'&&Math.floor(elapsed*10)%2===0;
-    ctx.fillStyle='#e8efcf';ctx.fillRect(state.bird.x-27,by+(wing?-3:8),12,5);ctx.fillRect(state.bird.x-32,by+(wing?-8:12),8,5);
-    pilot(symbol,state.bird.x,by,82,Math.max(-.22,Math.min(.45,state.bird.vy/800)));
-    if(state.phase==='running'&&!reduce.matches&&Math.floor(elapsed*40)%3===0)particles.push({x:state.bird.x-27,y:by+8,vx:-35,vy:8,life:.15,color:accent,size:3});
-    particles=particles.filter(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)return false;ctx.globalAlpha=Math.min(1,p.life*4);ctx.fillStyle=p.color;ctx.fillRect(Math.round(p.x),Math.round(p.y),p.size,p.size);return true;});ctx.globalAlpha=1;
-    // Quiet scanlines retain the handheld texture without a flashing overlay.
-    ctx.fillStyle='#00000012';for(let y=21;y<HEIGHT-20;y+=4)ctx.fillRect(0,y,WIDTH,1);
+    ctx.strokeStyle='#172735';ctx.beginPath();for(let x=offset-(travel%112);x<viewWidth;x+=112){ctx.moveTo(Math.round(x)+.5,0);ctx.lineTo(Math.round(x)+.5,HEIGHT);}ctx.stroke();
+    ctx.strokeStyle='#436558';ctx.lineWidth=1;ctx.setLineDash([3,7]);ctx.beginPath();visible.forEach((g,i)=>{const x=g.x-travel+offset,y=g.center-cam;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();ctx.setLineDash([]);
+    for(const g of visible){
+      const x=Math.round(g.x-travel+offset),left=x-GATE_WIDTH/2,top=g.top-cam,bottom=g.bottom-cam,color=g.rising?'#9ce7a2':'#ff8795',next=g.index===state.score;
+      // Narrow obstacle columns extend through world space, not to a fixed floor.
+      ctx.fillStyle=g.rising?'#19362f':'#372533';ctx.fillRect(left,0,GATE_WIDTH,Math.max(0,Math.min(HEIGHT,top)));ctx.fillRect(left,Math.max(0,bottom),GATE_WIDTH,Math.max(0,HEIGHT-Math.max(0,bottom)));
+      ctx.fillStyle=g.rising?'#2a4c40':'#513044';for(let y=-(Math.round(cam)%22);y<HEIGHT;y+=22){if(y+2<top||y>bottom)ctx.fillRect(left+3,y,GATE_WIDTH-6,2);}
+      ctx.strokeStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,Math.max(-2,g.highY-cam));ctx.lineTo(x,Math.min(HEIGHT+2,top));ctx.moveTo(x,Math.max(-2,bottom));ctx.lineTo(x,Math.min(HEIGHT+2,g.lowY-cam));ctx.stroke();
+      if(bottom>=0&&top<=HEIGHT){
+        const y=Math.max(-1,top),h=Math.max(1,Math.min(HEIGHT+1,bottom)-y);ctx.fillStyle=color;ctx.globalAlpha=next?.22:.09;ctx.fillRect(left,y,GATE_WIDTH,h);ctx.globalAlpha=1;
+        ctx.strokeStyle=color;ctx.lineWidth=next?2:1;ctx.strokeRect(left-1,y,GATE_WIDTH+2,h);
+        if(next){ctx.fillStyle=accent;ctx.fillRect(left-7,(top+bottom)/2-2,3,4);}
+      }else{
+        const up=bottom<0,y=up?17:HEIGHT-43;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y+(up?-7:7));ctx.lineTo(x-5,y+(up?2:-2));ctx.lineTo(x+5,y+(up?2:-2));ctx.fill();
+      }
+      if(!mobile||g.index%2===0||next){ctx.fillStyle=next?'#edf4e3':'#8da49c';ctx.font=`${mobile?19:13}px monospace`;ctx.textAlign='center';ctx.fillText(g.date.slice(5).replace('-','/'),x,HEIGHT-10);}
+    }
+    // A small pilot with generous collision forgiveness around its centre.
+    const by=state.bird.y-cam+(state.phase==='ready'&&!reduce.matches?Math.sin(performance.now()/350)*2:0);
+    if(state.phase==='running'&&state.lift){ctx.fillStyle=accent;ctx.fillRect(px-4,by+13,3,reduce.matches?5:5+Math.floor(state.time*18)%3*3);}
+    pilot(symbol,px,by,Math.max(-.15,Math.min(.2,state.bird.vy/1600)));
+    ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(px)-1,Math.round(by)-1,2,2);
+    particles=particles.filter(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)return false;ctx.globalAlpha=Math.min(1,p.life*4);ctx.fillStyle=p.color;ctx.fillRect(Math.round(p.x+offset),Math.round(p.y-cam),p.size,p.size);return true;});ctx.globalAlpha=1;
+    ctx.fillStyle='#0000000a';for(let y=0;y<HEIGHT;y+=4)ctx.fillRect(0,y,viewWidth,1);
+    ctx.fillStyle='#0b1420e8';ctx.fillRect(viewWidth-(mobile?88:64),0,mobile?88:64,HEIGHT);ctx.fillStyle='#aec2c5';ctx.font=`${mobile?21:14}px monospace`;ctx.textAlign='right';for(const {price,y} of ticks)ctx.fillText(labelPrice(price),viewWidth-10,y-7);
+    if(state.phase==='ready'){ctx.font=`${mobile?21:14}px monospace`;ctx.textAlign='left';ctx.fillStyle='#90a7a3';ctx.fillText(t('HOLD TO RISE · RELEASE TO GLIDE','按住上升 · 松开滑落'),18,27);}
   }
-  return {draw,burst,clear:()=>{particles=[];}};
+  return {draw,burst,clear:()=>{particles=[];},destroy:()=>window.removeEventListener('resize',resize)};
 }
