@@ -60,6 +60,18 @@ The engine suite plays 270 seeded matches across all nine deck matchups, checks 
 
 ## Game and AI
 
+### Candle Flight
+
+`/play/candle-flight` is a pixel arcade game using actual daily OHLC snapshots for NVIDIA, Tesla, Apple, and Bitcoin. Each asset has three courses: January, February, and March 2024. Stock snapshots were retrieved from Yahoo Finance; BTC-USD candles came from Coinbase Exchange. Provider URLs and retrieval time are preserved in `public/flight/market-data.json`, and each course links its source in the game. Historical values are used as returned by their providers, not as a live quote feed.
+
+The candle body (open to close) is the passable window. Its midpoint follows the historical price, scaled to the playfield; window heights are widened to 142–194 game units so even dojis remain playable. Wicks are visual markers. All dates and OHLC values remain unchanged in the data and readout. Tap, click, Space, or Up to flap; P or Escape pauses. Losing focus pauses automatically. Each asset/month keeps a separate local best score. Language changes preserve the run.
+
+The game uses original generated pixel caricatures and Silkscreen, distributed under the SIL Open Font License in `public/assets/fonts/OFL.txt`. Market snapshots and all assets are bundled, so playing makes no calls to finance providers or model APIs. The test controller verifies all twelve courses are finishable; automatic play is not included in the game.
+
+Run `node scripts/flight-browser-check.mjs` against the local server (`TEST_BASE` overrides its URL) for input-driven victory, retries, records, pause/language behavior, mobile touch, and navigation checks. The `tests/flight.test.mjs` suite verifies data integrity, geometry, collisions, and all courses.
+
+### Strata
+
 `public/game/cards.js` defines card mechanics and preset decks. `catalog.js` supplies simple English/Chinese names and descriptions. `engine.js` validates state transitions. `ai.js` chooses legal moves using the public board and its own hand; it cannot see the player's hand, private deck orders, future mine cards, or seed. Survey reveals only its user's forecast.
 
 The AI runs in the browser. **No LLM API calls or per-move token usage.** This version has one AI difficulty and local matches, with no multiplayer, cross-device saves, public user registration, or custom deck editor. New games replace the browser's saved match; tutorials never do. Existing `oblique-strata-v1` saves are read and migrated to `janus-strata-v1` on the next successful save.

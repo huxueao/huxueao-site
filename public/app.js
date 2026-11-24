@@ -25,14 +25,17 @@ const rows = list => list.map(e => `<a class="entry-row" href="${entryLink(e)}" 
 function strataCard() {
   return `<article class="project-feature"><a class="project-art" href="/play/strata" data-nav aria-label="${t('Play Strata', '游玩 Strata')}"><img src="/assets/doorway.png" alt="${t('Pixel landscape with a stone doorway', '像素风格的石门与山野')}" width="1200" height="800"></a><div class="project-copy"><span class="eyebrow">${t('Card game', '卡牌游戏')}</span><h2><a href="/play/strata" data-nav>Strata</a></h2><p>${t('Dig for treasure. Build your crew. Play against the AI.', '挖掘宝藏，组建队伍，与电脑对战。')}</p><a class="button primary" href="/play/strata" data-nav>${t('Play', '开始游戏')}</a></div></article>`;
 }
+function flightCard() {
+  return `<article class="project-feature flight-project"><a class="project-art flight-card-art" href="/play/candle-flight" data-nav aria-label="${t('Play Candle Flight','玩 K 线飞行')}"><span class="pilot-window pilot-NVDA"><img src="/assets/flight-pilots.png" alt="" loading="lazy"></span><span class="flight-card-title">CANDLE<br>FLIGHT</span><span class="flight-card-bars" aria-hidden="true"><i></i><i></i><i></i></span></a><div class="project-copy"><span class="eyebrow">${t('Arcade game','街机小游戏')}</span><h2><a href="/play/candle-flight" data-nav>Candle Flight</a></h2><p>${t('Pick your pilot. Fly through real market candles.','选择角色，飞过真实行情中的 K 线。')}</p><a class="button primary" href="/play/candle-flight" data-nav>${t('Play','开始游戏')}</a></div></article>`;
+}
 function home() {
-  return `<header class="home-heading"><h1>${t('Writing and small projects.', '文章与小作品。')}</h1><p>${t('By Hu Xueao.', 'Hu Xueao 的个人网站。')}</p></header>${errorNote()}<div class="home-grid"><section><div class="section-title"><h2>${t('Projects', '项目')}</h2><a href="/projects" data-nav>${t('View all', '查看全部')}</a></div>${strataCard()}</section><section class="home-writing"><div class="section-title"><h2>${t('Writing', '文章')}</h2><a href="/writing" data-nav>${t('View all', '查看全部')}</a></div>${writing().length ? rows(writing().slice(0, 4)) : emptyWriting()}</section></div>`;
+  return `<header class="home-heading"><h1>${t('Writing and small projects.', '文章与小作品。')}</h1><p>${t('By Hu Xueao.', 'Hu Xueao 的个人网站。')}</p></header>${errorNote()}<div class="home-grid"><section><div class="section-title"><h2>${t('Projects', '项目')}</h2><a href="/projects" data-nav>${t('View all', '查看全部')}</a></div>${flightCard()}<div class="home-flight">${strataCard()}</div></section><section class="home-writing"><div class="section-title"><h2>${t('Writing', '文章')}</h2><a href="/writing" data-nav>${t('View all', '查看全部')}</a></div>${writing().length ? rows(writing().slice(0, 4)) : emptyWriting()}</section></div>`;
 }
 function listing() {
   return `<header class="page-heading"><h1>${t('Writing', '文章')}</h1><p>${t('Articles and notes.', '文章与随笔。')}</p></header>${errorNote()}<section class="listing">${writing().length ? rows(writing()) : emptyWriting()}</section>`;
 }
 function projects() {
-  return `<header class="page-heading"><h1>${t('Projects', '项目')}</h1><p>${t('Games and things I build.', '我做的游戏和小工具。')}</p></header>${errorNote()}<div class="project-grid">${strataCard()}${entries.filter(e => e.kind === 'project').map(e => `<article class="project-feature">${e.cover_url ? `<a class="project-art" href="${entryLink(e)}" data-nav><img src="${esc(safeLink(e.cover_url))}" alt="${esc(e.title)}" loading="lazy"></a>` : ''}<div class="project-copy"><h2>${esc(e.title)}</h2><p>${esc(e.excerpt)}</p><a class="button" href="${entryLink(e)}" data-nav>${t('Open project', '打开项目')}</a></div></article>`).join('')}</div>`;
+  return `<header class="page-heading"><h1>${t('Projects', '项目')}</h1><p>${t('Games and things I build.', '我做的游戏和小工具。')}</p></header>${errorNote()}<div class="project-grid">${flightCard()}${strataCard()}${entries.filter(e => e.kind === 'project').map(e => `<article class="project-feature">${e.cover_url ? `<a class="project-art" href="${entryLink(e)}" data-nav><img src="${esc(safeLink(e.cover_url))}" alt="${esc(e.title)}" loading="lazy"></a>` : ''}<div class="project-copy"><h2>${esc(e.title)}</h2><p>${esc(e.excerpt)}</p><a class="button" href="${entryLink(e)}" data-nav>${t('Open project', '打开项目')}</a></div></article>`).join('')}</div>`;
 }
 function article(slug) {
   const e = entries.find(e => e.slug === slug);
@@ -47,21 +50,27 @@ async function render({focus = false} = {}) {
   let path = location.pathname;
   const oldRoutes = {'/experiments': '/projects', '/index': '/', '/about': '/'};
   if (oldRoutes[path]) { path = oldRoutes[path]; history.replaceState({}, '', path); }
-  document.body.classList.toggle('game-page', path === '/play/strata');
-  document.title = path === '/play/strata' ? 'Strata — Janus' : 'Janus — Hu Xueao';
+  document.body.classList.toggle('game-page', path.startsWith('/play/'));
+  document.body.classList.toggle('flight-page', path === '/play/candle-flight');
+  document.title = path === '/play/strata' ? 'Strata - Janus' : path === '/play/candle-flight' ? 'Candle Flight - Janus' : 'Janus - Hu Xueao';
   activeNav();
   if (path === '/play/strata') {
     main.innerHTML = `<p class="loading">${t('Loading game…', '正在加载游戏…')}</p>`;
     const { mountGame } = await import('./game/ui.js');
     if (id !== renderId) return;
     gameCleanup = mountGame(main);
+  } else if(path === '/play/candle-flight') {
+    main.innerHTML = `<p class="loading">${t('Loading game.','正在载入游戏。')}</p>`;
+    const {mountFlight}=await import('./flight/ui.js');
+    if(id!==renderId)return;
+    gameCleanup=mountFlight(main);
   } else main.innerHTML = path === '/' ? home() : path === '/writing' ? listing() : path === '/projects' ? projects() : path.startsWith('/entry/') ? article(decodeURIComponent(path.slice(7))) : notFound();
   if (focus) main.focus({preventScroll: true});
 }
 async function load() {
   try { const r = await fetch('/api/content', {cache: 'no-store'}); if (!r.ok) throw new Error(); entries = (await r.json()).entries; loadError = false; }
   catch { loadError = true; }
-  if (location.pathname !== '/play/strata') await render();
+  if (!location.pathname.startsWith('/play/')) await render();
 }
 document.addEventListener('click', event => {
   const a = event.target.closest('a[data-nav]');
@@ -71,5 +80,5 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-retry]')) load();
 });
 window.addEventListener('popstate', () => render({focus: true}));
-window.addEventListener('janus:language', () => { shell(); if (location.pathname !== '/play/strata') render(); });
+window.addEventListener('janus:language', () => { shell(); if (!location.pathname.startsWith('/play/')) render(); });
 bindLanguageButton(); shell(); mountMascot(document.querySelector('#floating-mascot')); render(); load();

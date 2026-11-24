@@ -148,7 +148,7 @@ async function dispatch(request, env, authenticate) {
   if (path === '/sitemap.xml') {
     const base = env.SITE_URL || url.origin;
     const { results = [] } = env.DB ? await env.DB.prepare("SELECT kind,slug,updated_at FROM entries WHERE status='published'").all() : {};
-    const paths = ['/', '/writing', '/projects', '/play/strata'].map(p => `<url><loc>${escapeHTML(base + p)}</loc></url>`);
+    const paths = ['/', '/writing', '/projects', '/play/strata', '/play/candle-flight'].map(p => `<url><loc>${escapeHTML(base + p)}</loc></url>`);
     for (const row of results) paths.push(`<url><loc>${escapeHTML(base + '/entry/' + row.slug)}</loc><lastmod>${row.updated_at.slice(0,10)}</lastmod></url>`);
     return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.join('')}</urlset>`, { headers: { 'Content-Type': 'application/xml' } });
   }
