@@ -1,86 +1,72 @@
 import {t,getLanguage} from '../i18n.js';
-import {ASSETS,MONTHS,WIDTH,HEIGHT,makeCourse,createFlight,flap,step,nextGate,validateMarketData} from './model.js';
+import {ASSETS,makeCourse,createFlight,flap,step,nextGate,validateMarketData,flightKey,saveFlight,restoreFlight} from './model.js';
 import {makeRenderer} from './draw.js';
 import {escapeHTML as esc} from '../format.js';
-
-const KEY='janus-candle-flight-best-v1';
-const monthName=m=>t(['January','February','March'][MONTHS.indexOf(m)],['1 月','2 月','3 月'][MONTHS.indexOf(m)]);
+const BEST='janus-candle-flight-best-v2',RUN='janus-candle-flight-run-v2';
 const portrait=s=>`<span class="pilot-window pilot-${s}" aria-hidden="true"><img src="/assets/flight-pilots.png" alt=""></span>`;
 export function mountFlight(root){
-  let data=null,selected='NVDA',month='2024-01',state=null,raf=0,previous=0,accumulator=0,closed=false,renderer=null,canvas=null,overlay=null,hud=null,readout=null,records={},lastScore=-1,lastPhase='',lastDate='',controller=new AbortController();
-  try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))records=saved;}catch{}
-  const best=()=>Math.max(0,Math.min(31,Number(records[selected+':'+month])||0));
-  const asset=()=>data.assets.find(a=>a.symbol===selected);
-  const name=()=>t(ASSETS[selected].name,ASSETS[selected].zh),pilot=()=>t(ASSETS[selected].pilot,ASSETS[selected].pilotZh);
+  let data=null,selected='NVDA',state=null,raf=0,previous=0,accumulator=0,closed=false,renderer=null,canvas=null,overlay=null,hud=null,readout=null,records={},saved=null,saveError=false,lastScore=-1,lastPhase='',lastDate='',controller=null,loadId=0;
+  try{const v=JSON.parse(localStorage.getItem(BEST)||'{}');if(v&&typeof v==='object'&&!Array.isArray(v))records=v;const s=JSON.parse(localStorage.getItem(RUN)||'null');if(restoreFlight(s)){saved=s;selected=s.data.asset.symbol;}}catch{}
+  const asset=()=>data.asset,name=()=>t(ASSETS[selected].name,ASSETS[selected].zh),pilot=()=>t(ASSETS[selected].pilot,ASSETS[selected].pilotZh);
+  const best=()=>Math.max(0,Math.min(366,Number(records[flightKey(data)])||0));
   const active=()=>state&&['running','paused'].includes(state.phase);
-  const record=()=>{const key=selected+':'+month;if(state.score>best()){records[key]=state.score;try{localStorage.setItem(KEY,JSON.stringify(records));}catch{}if(root.querySelector('[data-course-note]'))updateCourseNote();}};
+  const hasSaved=()=>saved?.data?.asset?.symbol===selected&&!!restoreFlight(saved);
+  function saveRun(){if(!active())return;saved=saveFlight(state,data);try{localStorage.setItem(RUN,JSON.stringify(saved));saveError=false;}catch{saveError=true;}updateSaveNote();}
+  function clearRun(){saved=null;try{localStorage.removeItem(RUN);}catch{}}
+  function updateSaveNote(){const el=root.querySelector('[data-save-note]');if(el)el.textContent=saveError?t('This browser could not save. Keep the tab open.','当前浏览器无法保存，请保持页面打开。'):t('Your latest unfinished flight saves in this browser.','最近一局未完成的飞行会保存在此浏览器。');}
+  function record(){const k=flightKey(data);if(state.score>best()){records[k]=state.score;try{localStorage.setItem(BEST,JSON.stringify(records));}catch{}}if(active())saveRun();}
   function frame(time){
     if(closed)return;const dt=previous?Math.min(.05,(time-previous)/1000):0;previous=time;
     if(state){
-      if(state.phase==='running'){accumulator+=dt;while(accumulator>=1/120&&state.phase==='running'){step(state,1/120);accumulator-=1/120;}}
-      else accumulator=0;
-      if(state.score!==lastScore){if(state.score>lastScore&&lastScore>=0)renderer.burst(state.bird.x+10,state.bird.y,ASSETS[selected].color,14);record();lastScore=state.score;updateHUD();}
-      if(state.phase!==lastPhase){if(state.phase==='crashed')renderer.burst(state.bird.x,state.bird.y,'#ff8795',26);lastPhase=state.phase;updateUI();}
-      const g=nextGate(state);if(g?.date!==lastDate){lastDate=g?.date;updateReadout();}
-      renderer.draw(state,selected,dt);
+      if(state.phase==='running'){accumulator+=dt;while(accumulator>=1/120&&state.phase==='running'){step(state,1/120);accumulator-=1/120;}}else accumulator=0;
+      if(state.score!==lastScore){if(state.score>lastScore&&lastScore>=0)renderer.burst(state.bird.x+10,state.bird.y,ASSETS[selected].color,14);record();lastScore=state.score;updateHUD();updateCourseNote();}
+      if(state.phase!==lastPhase){if(state.phase==='crashed')renderer.burst(state.bird.x,state.bird.y,'#ff8795',26);if(['crashed','cleared'].includes(state.phase))clearRun();lastPhase=state.phase;updateUI();}
+      const g=nextGate(state);if(g?.date!==lastDate){lastDate=g?.date;updateReadout();}renderer.draw(state,selected,dt);
     }
     raf=requestAnimationFrame(frame);
   }
-  function sourceText(){return `<p>${t('Daily historical candles from January–March 2024. One candle is one trading day (one calendar day for Bitcoin).','采用 2024 年 1—3 月的真实日 K 线。股票每根对应一个交易日，比特币每根对应一个自然日。')}</p><p>${t('The body is the passage: open to close. Prices are scaled to the screen; small bodies are widened so every gate is playable. Wicks are visual markers, not extra passages.','实体就是通道：从开盘价到收盘价。价格按屏幕缩放，小实体会放宽以保证可通过；影线只作标记，不是额外通道。')}</p><p>${t('Source','数据来源')}：<a href="${esc(asset().sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(asset().source)}</a> · ${t('USD · historical snapshot','美元 · 历史数据快照')}</p><p>${t('Original pixel caricatures. An independent fan-made game.','原创像素漫画形象，独立制作的小游戏。')}</p>`;}
+  function sourceText(){return `<p>${t('Each new course covers the past year, ending today in Singapore time. It uses the latest completed daily candles. Stock dates follow the US trading session; Bitcoin days close at midnight UTC.','新关卡覆盖新加坡日期当天往前一个完整年度，采用最新已完成的日 K 线。股票按美国交易日计算，比特币按 UTC 零点结束一天。')}</p><p>${t('The candle body is the passage: open to close. Prices are scaled to the screen; thin bodies are widened so every gate is playable. Green means up, red means down. Wicks are markers, not passages.','实体就是通道：从开盘价到收盘价。价格按屏幕缩放，细实体会放宽以保证可通过。绿色上涨，红色下跌，影线不是通道。')}</p><p>${t('Data is fixed when a flight begins. Pause or leave to save your latest unfinished run. Continuing a saved run uses its original dates and data.','飞行开始后，数据保持不变。暂停或离开时会保存最近一局；继续存档时仍使用原来的日期和行情。')}</p><p>${t('Source','数据来源')}：<a href="${esc(asset().sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(asset().source)}</a> · USD<br>${t('Fetched','获取于')} ${esc(data.fetchedAt.replace('T',' ').slice(0,16))} UTC</p><p>${t('Original pixel caricatures. An independent fan-made game.','原创像素漫画形象，独立制作的小游戏。')}</p>`;}
   function shell(){
-    root.innerHTML=`<section class="flight" data-asset="${selected}"><div class="flight-top"><a href="/projects" data-nav>${t('Projects','项目')}</a><span>${t('Real candles. One button.','真实 K 线，一键飞行。')}</span></div><div class="flight-layout"><div class="flight-lobby"><h1><span>CANDLE</span><span>FLIGHT</span></h1><p class="flight-lede">${t('Fly through the candle bodies.<br>How far can you go?','穿过 K 线实体。<br>你能飞过多少根？')}</p><span class="flight-label">${t('Choose your pilot','选择角色')}</span><div class="pilot-grid" role="group" aria-label="${t('Choose an asset','选择资产')}">${Object.entries(ASSETS).map(([s,a])=>`<button class="pilot-card" data-asset-choice="${s}" aria-pressed="${s===selected}">${portrait(s)}<span><strong>${s}</strong><small>${t(a.name,a.zh)}</small></span></button>`).join('')}</div><span class="flight-label">${t('Choose a month · 2024','选择月份 · 2024')}</span><div class="flight-months" role="group" aria-label="${t('Historical month','历史月份')}">${MONTHS.map(m=>`<button data-month="${m}" aria-pressed="${m===month}">${monthName(m)}</button>`).join('')}</div><p class="flight-note" data-course-note></p><details><summary>${t('How it works & data','玩法与数据')}</summary><div data-source>${sourceText()}</div></details></div><div><div class="flight-cabinet"><div class="flight-hud" data-hud></div><div class="flight-stage"><canvas tabindex="0" aria-label="${t('Candle Flight. Space or tap to flap. P to pause.','K 线飞行。空格或点击扑腾，P 键暂停。')}">${t('This game needs a browser with canvas support.','此游戏需要支持 Canvas 的浏览器。')}</canvas><div class="flight-overlay"></div></div><div class="flight-controls"><button class="flight-button" data-flap>${t('Flap','扑腾')}</button><button class="flight-button secondary" data-pause>${t('Pause','暂停')}</button></div><p class="flight-help">${t('Tap or Space: flap · P: pause','点击 / 空格：扑腾 · P：暂停')}</p></div><div class="flight-readout" data-readout></div><p class="sr-only" role="status" aria-live="polite" data-flight-status></p></div></div></section>`;
+    root.innerHTML=`<section class="flight" data-asset="${selected}"><div class="flight-top"><a href="/projects" data-nav>${t('Projects','项目')}</a><span>${t('One year. One flight.','一年行情，一次飞行。')}</span></div><div class="flight-layout"><div class="flight-lobby"><h1><span>CANDLE</span><span>FLIGHT</span></h1><p class="flight-lede">${t('Fly through a full year of real market candles.','飞过一整年的真实 K 线。')}</p><span class="flight-label">${t('Choose your pilot','选择角色')}</span><div class="pilot-grid" role="group" aria-label="${t('Choose an asset','选择资产')}">${Object.entries(ASSETS).map(([s,a])=>`<button class="pilot-card" data-asset-choice="${s}" aria-pressed="${s===selected}">${portrait(s)}<span><strong>${s}</strong><small>${t(a.name,a.zh)}</small></span></button>`).join('')}</div><div class="flight-period"><span>${t('Past year','过去一年')}</span><strong>${data.windowStart}<br>${data.windowEnd}</strong><p>${t('Latest completed candle','最新已完成 K 线')}：${data.asOf}</p></div><p class="flight-note" data-course-note></p>${data.isFallback?`<p class="flight-data-notice" role="status">${t(`The latest feed is unavailable. This saved snapshot was fetched on ${data.fetchedAt.slice(0,10)}.`,`最新行情暂时不可用。当前为 ${data.fetchedAt.slice(0,10)} 获取的备用数据。`)} <button class="text-button" data-refresh>${t('Try update','重新更新')}</button></p>`:''}<details><summary>${t('How it works & data','玩法与数据')}</summary><div>${sourceText()}</div></details></div><div><div class="flight-cabinet"><div class="flight-hud" data-hud></div><div class="flight-stage"><canvas tabindex="0" aria-label="${t('Candle Flight. Space or tap to flap. P to pause.','K 线飞行。空格或点击扑腾，P 键暂停。')}"></canvas><div class="flight-overlay"></div></div><div class="flight-controls"><button class="flight-button" data-flap>${t('Flap','扑腾')}</button><button class="flight-button secondary" data-pause>${t('Pause','暂停')}</button></div><p class="flight-help">${t('Tap or Space: flap · P: pause','点击 / 空格：扑腾 · P：暂停')}</p></div><div class="flight-readout" data-readout></div><p class="flight-save-note" data-save-note></p><p class="sr-only" role="status" aria-live="polite" data-flight-status></p></div></div></section>`;
     canvas=root.querySelector('canvas');overlay=root.querySelector('.flight-overlay');hud=root.querySelector('[data-hud]');readout=root.querySelector('[data-readout]');renderer=makeRenderer(canvas);
     canvas.addEventListener('pointerdown',e=>{if(e.button!==0||e.isPrimary===false)return;e.preventDefault();canvas.focus({preventScroll:true});doFlap();});
-    updateUI();updateHUD();updateReadout();updateCourseNote();
+    updateUI();updateHUD();updateReadout();updateCourseNote();updateSaveNote();
   }
-  function updateCourseNote(){root.querySelector('[data-course-note]').textContent=t(`${pilot()} · ${state.course.length} candles · Best ${best()}`,`${pilot()} · ${state.course.length} 根 K 线 · 最佳 ${best()}`);root.querySelector('[data-source]').innerHTML=sourceText();}
-  function updateHUD(){if(!hud)return;hud.innerHTML=`<div><strong>${selected}</strong><span>${esc(pilot())} · ${monthName(month)} 2024</span></div><div class="flight-score"><b>${state.score}</b><small> / ${state.course.length}</small><span>${t('Best','最佳')} ${best()}</span></div>`;}
-  function updateReadout(){if(!readout)return;const g=nextGate(state);if(!g)return;const price=n=>n.toLocaleString(getLanguage()==='zh'?'zh-CN':'en-US',{maximumFractionDigits:2,minimumFractionDigits:2});readout.innerHTML=`<strong>${g.date}</strong><span>${t('Open','开')} ${price(g.open)} · ${t('Close','收')} ${price(g.close)}</span>`;}
+  function updateCourseNote(){const el=root.querySelector('[data-course-note]');if(el&&state)el.textContent=t(`${state.course.length} candles · Best ${best()}`,`${state.course.length} 根 K 线 · 最佳 ${best()}`);}
+  function updateHUD(){if(hud)hud.innerHTML=`<div><strong>${selected}</strong><span>${esc(pilot())}</span></div><div class="flight-score"><b>${state.score}</b><small> / ${state.course.length}</small><span>${t('Best','最佳')} ${best()}</span></div>`;}
+  function updateReadout(){if(!readout)return;const g=nextGate(state);if(!g)return;const p=n=>n.toLocaleString(getLanguage()==='zh'?'zh-CN':'en-US',{maximumFractionDigits:2,minimumFractionDigits:2});readout.innerHTML=`<strong>${g.date}</strong><span>${t('Open','开')} ${p(g.open)} · ${t('Close','收')} ${p(g.close)}</span>`;}
   function updateUI(){
-    if(!overlay||!state)return;
-    document.body.classList.toggle('flight-running',active()||state.phase==='crashed'||state.phase==='cleared');
-    root.querySelector('[data-pause]').disabled=!active();root.querySelector('[data-pause]').textContent=state.phase==='paused'?t('Resume','继续'):t('Pause','暂停');
-    root.querySelector('[data-flap]').disabled=['paused','crashed','cleared'].includes(state.phase);
-    root.querySelectorAll('[data-asset-choice],[data-month]').forEach(b=>b.disabled=active());
-    if(state.phase==='running'){overlay.hidden=true;return;}overlay.hidden=false;
-    let title,body,actions;
-    if(state.phase==='ready'){title=t('READY?','准备好了吗？');body=t(`Fly as ${pilot()}. Tap to rise, release to fall. Pass through the bright windows.`,`化身${pilot()}。点击上升，松手下落，穿过发亮的窗口。`);actions=`<button class="flight-button" data-start-flight>${t('Fly','起飞')}</button>`;}
-    else if(state.phase==='paused'){title=t('PAUSED','已暂停');body=t('Your flight is waiting.','你的进度还在。');actions=`<button class="flight-button" data-resume>${t('Resume','继续')}</button><button class="flight-button secondary" data-hangar>${t('Choose pilot','选择角色')}</button>`;}
-    else{const win=state.phase==='cleared';title=win?t('MONTH CLEARED!','飞完整个月！'):t('FLIGHT OVER','飞行结束');body=t(`${state.score} / ${state.course.length} candles. Best: ${best()}.`,`${state.score} / ${state.course.length} 根 K 线。最佳：${best()}。`);body+=`<br>${monthName(month)} 2024 · ${name()}`;actions=`<button class="flight-button" data-retry-flight>${t('Try again','再来一次')}</button><button class="flight-button secondary" data-hangar>${t('Choose pilot','选择角色')}</button>`;}
-    overlay.innerHTML=`<div class="flight-overlay-box"><h2>${title}</h2><p>${body}</p><div class="flight-overlay-actions">${actions}</div></div>`;
-    root.querySelector('[data-flight-status]').textContent=`${title}. ${state.score} / ${state.course.length}`;
-    if(state.phase==='crashed'||state.phase==='cleared')overlay.querySelector('[data-retry-flight]')?.focus({preventScroll:true});
+    if(!overlay||!state)return;document.body.classList.toggle('flight-running',active()||['crashed','cleared'].includes(state.phase));
+    root.querySelector('[data-pause]').disabled=!active();root.querySelector('[data-pause]').textContent=state.phase==='paused'?t('Resume','继续'):t('Pause','暂停');root.querySelector('[data-flap]').disabled=['paused','crashed','cleared'].includes(state.phase);root.querySelectorAll('[data-asset-choice],[data-refresh]').forEach(b=>b.disabled=active());
+    if(state.phase==='running'){overlay.hidden=true;return;}overlay.hidden=false;let title,body,actions;
+    if(state.phase==='ready'){
+      title=t('READY?','准备好了吗？');body=t(`${pilot()} · ${state.course.length} candles.<br>Tap to rise. Fly through the bright windows.`,`${pilot()} · ${state.course.length} 根 K 线。<br>点击上升，穿过发亮的窗口。`);
+      actions=`${hasSaved()?`<button class="flight-button" data-continue-flight>${t('Continue flight','继续上次飞行')}</button>`:''}<button class="flight-button ${hasSaved()?'secondary':''}" data-start-flight>${data.isFallback?t('Play snapshot','玩备用关卡'):hasSaved()?t('New flight','重新开始'):t('Fly','起飞')}</button>`;
+      if(hasSaved())body+=`<br><small>${t('Saved','已保存')}：${saved.state.score} / ${saved.data.asset.candles.length} · ${saved.data.windowEnd}</small>`;
+    }else if(state.phase==='paused'){title=t('PAUSED','已暂停');body=t('Your flight is saved.','飞行进度已保存。');if(saveError)body=t('Keep this tab open; saving is unavailable.','当前无法保存，请保持页面打开。');actions=`<button class="flight-button" data-resume>${t('Resume','继续')}</button><button class="flight-button secondary" data-hangar>${t('Choose pilot','选择角色')}</button>`;}
+    else{title=state.phase==='cleared'?t('YEAR CLEARED!','飞完整年！'):t('FLIGHT OVER','飞行结束');body=t(`${state.score} / ${state.course.length} candles. Best: ${best()}.`,`${state.score} / ${state.course.length} 根 K 线。最佳：${best()}。`)+`<br>${data.windowStart}<br>${data.windowEnd}`;actions=`<button class="flight-button" data-retry-flight>${t('Try again','再来一次')}</button><button class="flight-button secondary" data-hangar>${t('Choose pilot','选择角色')}</button>`;}
+    overlay.innerHTML=`<div class="flight-overlay-box"><h2>${title}</h2><p>${body}</p><div class="flight-overlay-actions">${actions}</div></div>`;root.querySelector('[data-flight-status]').textContent=`${title}. ${state.score} / ${state.course.length}`;
+    if(['crashed','cleared'].includes(state.phase))overlay.querySelector('[data-retry-flight]')?.focus({preventScroll:true});
   }
-  function reset(){state=createFlight(makeCourse(asset(),month));lastScore=-1;lastPhase='';lastDate='';accumulator=0;renderer?.clear();updateHUD();updateUI();updateReadout();updateCourseNote();}
-  function start(){if(!state)return;if(state.phase!=='ready')reset();flap(state);updateUI();canvas.focus({preventScroll:true});if(innerWidth<681)root.querySelector('.flight-top').scrollIntoView({block:'start'});}
+  function reset(){state=createFlight(makeCourse(asset()));lastScore=-1;lastPhase='';lastDate='';accumulator=0;renderer?.clear();updateHUD();updateUI();updateReadout();updateCourseNote();}
+  function start(){if(!state)return;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());if(!data.isFallback&&data.windowEnd!==today){load(selected,true);return;}if(state.phase!=='ready')reset();clearRun();flap(state);saveRun();updateUI();canvas.focus({preventScroll:true});if(innerWidth<681)root.querySelector('.flight-top').scrollIntoView({block:'start'});}
+  function continueFlight(){const restored=restoreFlight(saved);if(!restored)return;cancelAnimationFrame(raf);data=restored.data;selected=data.asset.symbol;state=restored.state;lastScore=state.score;lastDate='';lastPhase='';previous=0;accumulator=0;shell();state.phase='running';updateUI();canvas.focus({preventScroll:true});raf=requestAnimationFrame(frame);if(innerWidth<681)root.querySelector('.flight-top').scrollIntoView({block:'start'});}
   function doFlap(){if(!state)return;if(state.phase==='ready'){start();return;}if(state.phase==='running'){flap(state);renderer.burst(state.bird.x-25,state.bird.y+10,ASSETS[selected].color,3);}}
-  function pause(){if(state?.phase==='running'){state.phase='paused';updateUI();}else if(state?.phase==='paused'){state.phase='running';previous=0;updateUI();canvas.focus({preventScroll:true});}}
-  function click(e){const b=e.target.closest('button');if(!b)return;
-    if(b.hasAttribute('data-retry-load')){load();return;}
-    if(!state)return;
-    if(b.dataset.assetChoice&&!active()){selected=b.dataset.assetChoice;reset();shell();return;}
-    if(b.dataset.month&&!active()){month=b.dataset.month;reset();shell();return;}
+  function pause(){if(state?.phase==='running'){state.phase='paused';saveRun();updateUI();}else if(state?.phase==='paused'){state.phase='running';previous=0;updateUI();canvas.focus({preventScroll:true});}}
+  function click(e){const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-retry-load')){load(selected);return;}if(b.hasAttribute('data-continue-flight')){continueFlight();return;}if(!state)return;
+    if(b.dataset.assetChoice&&!active()){load(b.dataset.assetChoice);return;}
+    if(b.hasAttribute('data-refresh')&&!active()){load(selected);return;}
     if(b.hasAttribute('data-start-flight')||b.hasAttribute('data-retry-flight')){start();return;}
-    if(b.hasAttribute('data-flap')){doFlap();return;}
-    if(b.hasAttribute('data-pause')||b.hasAttribute('data-resume')){pause();return;}
-    if(b.hasAttribute('data-hangar')){reset();root.querySelector('[data-asset-choice]')?.focus({preventScroll:true});root.querySelector('.flight-lobby').scrollIntoView({block:'start'});}
+    if(b.hasAttribute('data-flap')){doFlap();return;}if(b.hasAttribute('data-pause')||b.hasAttribute('data-resume')){pause();return;}
+    if(b.hasAttribute('data-hangar')){saveRun();load(selected);}
   }
-  function key(e){if(e.repeat||!state||e.ctrlKey||e.metaKey||e.altKey)return;
-    if(e.target.closest('input,textarea,select,[contenteditable=true]'))return;
-    if(e.code==='KeyP'||e.code==='Escape'){if(active()){e.preventDefault();pause();}return;}
-    if(['Space','ArrowUp','KeyW'].includes(e.code)){
-      if(e.target.closest('button,a,summary')&&!e.target.closest('[data-flap]'))return;
-      e.preventDefault();doFlap();
-    }
+  function key(e){if(e.repeat||!state||e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,textarea,select,[contenteditable=true]'))return;if(e.code==='KeyP'||e.code==='Escape'){if(active()){e.preventDefault();pause();}return;}if(['Space','ArrowUp','KeyW'].includes(e.code)){if(e.target.closest('button,a,summary')&&!e.target.closest('[data-flap]'))return;e.preventDefault();doFlap();}}
+  const hide=()=>{if(document.hidden&&state?.phase==='running'){state.phase='paused';saveRun();updateUI();}},blur=()=>{if(state?.phase==='running'){state.phase='paused';saveRun();updateUI();}},pagehide=()=>saveRun(),language=()=>{if(state){shell();previous=0;}};
+  async function load(symbol,autoStart=false){
+    const id=++loadId;controller?.abort();controller=new AbortController();cancelAnimationFrame(raf);state=null;selected=symbol;overlay=hud=readout=null;document.body.classList.remove('flight-running');root.innerHTML=`<div class="flight-load"><p>${t(`Loading the latest year for ${symbol}…`,`正在载入 ${symbol} 最近一年的行情……`)}</p><a href="/projects" data-nav>${t('Projects','项目')}</a></div>`;
+    try{const r=await fetch('/api/flight/market?symbol='+encodeURIComponent(symbol),{signal:controller.signal});if(!r.ok)throw Error('Market data unavailable');const result=validateMarketData(await r.json());if(result.asset.symbol!==symbol)throw Error('Wrong asset');if(closed||id!==loadId)return;data=result;state=createFlight(makeCourse(asset()));lastScore=-1;lastPhase='';lastDate='';previous=0;accumulator=0;shell();raf=requestAnimationFrame(frame);if(autoStart)start();}
+    catch(e){if(closed||e.name==='AbortError'||id!==loadId)return;root.innerHTML=`<div class="flight-load"><p>${t('The latest market data could not load.','暂时无法获取最新行情。')}</p><button class="flight-button" data-retry-load>${t('Try again','重试')}</button>${hasSaved()?`<button class="flight-button secondary" data-continue-flight>${t('Continue saved flight','继续已保存的飞行')}</button>`:''}</div>`;}
   }
-  const hide=()=>{if(document.hidden&&state?.phase==='running'){state.phase='paused';updateUI();}};
-  const blur=()=>{if(state?.phase==='running'){state.phase='paused';updateUI();}};
-  const language=()=>{if(state){shell();previous=0;}};
-  async function load(){
-    root.innerHTML=`<p class="flight-load">${t('Loading the market…','正在载入行情……')}</p>`;
-    try{const r=await fetch('/flight/market-data.json',{signal:controller.signal});if(!r.ok)throw Error('Could not load data');data=validateMarketData(await r.json());if(closed)return;state=createFlight(makeCourse(asset(),month));shell();previous=0;raf=requestAnimationFrame(frame);}
-    catch(e){if(closed||e.name==='AbortError')return;root.innerHTML=`<div class="flight-load"><p>${t('Market data could not load.','暂时无法载入行情。')}</p><button class="flight-button" data-retry-load>${t('Try again','重试')}</button></div>`;}
-  }
-  root.addEventListener('click',click);document.addEventListener('keydown',key);document.addEventListener('visibilitychange',hide);window.addEventListener('blur',blur);window.addEventListener('janus:language',language);load();
-  return()=>{closed=true;controller.abort();cancelAnimationFrame(raf);root.removeEventListener('click',click);document.removeEventListener('keydown',key);document.removeEventListener('visibilitychange',hide);window.removeEventListener('blur',blur);window.removeEventListener('janus:language',language);document.body.classList.remove('flight-running');};
+  root.addEventListener('click',click);document.addEventListener('keydown',key);document.addEventListener('visibilitychange',hide);window.addEventListener('blur',blur);window.addEventListener('pagehide',pagehide);window.addEventListener('janus:language',language);load(selected);
+  return()=>{saveRun();closed=true;controller?.abort();cancelAnimationFrame(raf);root.removeEventListener('click',click);document.removeEventListener('keydown',key);document.removeEventListener('visibilitychange',hide);window.removeEventListener('blur',blur);window.removeEventListener('pagehide',pagehide);window.removeEventListener('janus:language',language);document.body.classList.remove('flight-running');};
 }

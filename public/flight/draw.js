@@ -13,12 +13,13 @@ export function makeRenderer(canvas){
   }
   function draw(state,symbol,dt=0){
     const accent=ASSETS[symbol].color,elapsed=state.time,travel=state.distance;
+    const visible=state.course.slice(Math.max(0,state.score-2),state.score+5);
     ctx.fillStyle='#0c1420';ctx.fillRect(0,0,WIDTH,HEIGHT);
     ctx.strokeStyle='#1c2b39';ctx.lineWidth=1;ctx.beginPath();for(let y=40;y<HEIGHT;y+=40){ctx.moveTo(0,y+.5);ctx.lineTo(WIDTH,y+.5);}for(let x=-(travel*.16%40);x<WIDTH;x+=40){ctx.moveTo(Math.round(x)+.5,0);ctx.lineTo(Math.round(x)+.5,HEIGHT);}ctx.stroke();
     // Fixed city skyline and a faint price trace: decoration never changes collisions.
     ctx.fillStyle='#132431';for(let i=0;i<16;i++){const x=i*38-(travel*.08%38),h=24+(i*53%90);ctx.fillRect(x,HEIGHT-20-h,26,h);ctx.fillStyle='#213d46';for(let y=HEIGHT-28;y>HEIGHT-h;y-=14)ctx.fillRect(x+7,y,4,4);ctx.fillStyle='#132431';}
-    ctx.strokeStyle='#31504d';ctx.lineWidth=2;ctx.beginPath();state.course.forEach((g,i)=>{const x=g.x-travel;if(i===0)ctx.moveTo(x,g.center);else ctx.lineTo(x,g.center);});ctx.stroke();
-    for(const g of state.course){
+    ctx.strokeStyle='#31504d';ctx.lineWidth=2;ctx.beginPath();visible.forEach((g,i)=>{const x=g.x-travel;if(i===0)ctx.moveTo(x,g.center);else ctx.lineTo(x,g.center);});ctx.stroke();
+    for(const g of visible){
       const x=Math.round(g.x-travel),left=x-GATE_WIDTH/2;if(left>WIDTH+20||left+GATE_WIDTH<0)continue;
       const color=g.rising?'#9ce7a2':'#ff8795',dark=g.rising?'#173c37':'#482a3b',top=Math.round(g.top),bottom=Math.round(g.bottom);
       ctx.fillStyle=dark;ctx.fillRect(left,20,GATE_WIDTH,top-20);ctx.fillRect(left,bottom,GATE_WIDTH,HEIGHT-20-bottom);

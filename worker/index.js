@@ -1,4 +1,5 @@
 import { verifyAccess } from './auth.js';
+import { flightMarketResponse } from './flight-data.js';
 
 const security = {
   'X-Content-Type-Options': 'nosniff',
@@ -73,6 +74,7 @@ export function createHandler({ authenticate = verifyAccess } = {}) {
 
 async function dispatch(request, env, authenticate) {
   const url = new URL(request.url), path = url.pathname;
+  if(path==='/api/flight/market')return flightMarketResponse(request,env);
   if (path === '/favicon.ico') return Response.redirect(new URL('/assets/janus-coin.png',url),302);
   const admin = path === '/admin' || path.startsWith('/admin/') || path === '/admin.html' || path.startsWith('/api/admin/');
   let identity;
