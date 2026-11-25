@@ -2,14 +2,14 @@
   "version": 2,
   "windowStart": "2025-11-25",
   "windowEnd": "2026-11-25",
-  "fetchedAt": "2026-11-24T17:29:30.833Z",
+  "fetchedAt": "2026-11-25T03:33:19.455Z",
   "assets": [
     {
       "symbol": "NVDA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764028800&period2=1795541370",
+      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764028800&period2=1795577599",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764028800&period2=1795541370&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764028800&period2=1795577599&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -2011,16 +2011,24 @@
           "high": 171.5,
           "low": 156.93,
           "close": 165.05,
-          "volume": 779184200
+          "volume": 782593300
+        },
+        {
+          "date": "2026-11-24",
+          "open": 159.1,
+          "high": 159.92,
+          "low": 150.5,
+          "close": 155.38,
+          "volume": 383594200
         }
       ]
     },
     {
       "symbol": "TSLA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764028800&period2=1795541370",
+      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764028800&period2=1795577599",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764028800&period2=1795541370&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764028800&period2=1795577599&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -4022,16 +4030,24 @@
           "high": 393.83,
           "low": 371.95,
           "close": 385.46,
-          "volume": 46970000
+          "volume": 47105900
+        },
+        {
+          "date": "2026-11-24",
+          "open": 383.77,
+          "high": 390.09,
+          "low": 375.5,
+          "close": 384.68,
+          "volume": 28697600
         }
       ]
     },
     {
       "symbol": "AAPL",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764028800&period2=1795541370",
+      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764028800&period2=1795577599",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764028800&period2=1795541370&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764028800&period2=1795577599&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -6033,7 +6049,15 @@
           "high": 352.6,
           "low": 345.44,
           "close": 349.08,
-          "volume": 58538400
+          "volume": 58588700
+        },
+        {
+          "date": "2026-11-24",
+          "open": 348.06,
+          "high": 354.4,
+          "low": 345.88,
+          "close": 354.07,
+          "volume": 41214200
         }
       ]
     },
@@ -6043,7 +6067,7 @@
       "sourceUrl": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
       "requestUrls": [
         "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-25T00:00:00.000Z&end=2026-09-01T00:00:00.000Z",
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-01T00:00:00.000Z&end=2026-11-24T17:29:30.000Z"
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-01T00:00:00.000Z&end=2026-11-25T03:33:19.000Z"
       ],
       "interval": "1d",
       "candles": [
@@ -8958,6 +8982,14 @@
           "low": 60286.92,
           "close": 61189.97,
           "volume": 16914.31409598
+        },
+        {
+          "date": "2026-11-24",
+          "open": 61190.81,
+          "high": 61603.49,
+          "low": 59189.67,
+          "close": 59740.87,
+          "volume": 13455.7263034
         }
       ]
     }
