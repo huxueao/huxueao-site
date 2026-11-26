@@ -1,26 +1,18 @@
 {
   "version": 2,
-  "windowStart": "2025-11-25",
-  "windowEnd": "2026-11-25",
-  "fetchedAt": "2026-11-25T03:33:19.455Z",
+  "windowStart": "2025-11-26",
+  "windowEnd": "2026-11-26",
+  "fetchedAt": "2026-11-26T02:51:15.660Z",
   "assets": [
     {
       "symbol": "NVDA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764028800&period2=1795577599",
+      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764115200&period2=1795661475",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764028800&period2=1795577599&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764115200&period2=1795661475&interval=1d"
       ],
       "interval": "1d",
       "candles": [
-        {
-          "date": "2025-11-25",
-          "open": 174.91,
-          "high": 178.16,
-          "low": 169.55,
-          "close": 177.82,
-          "volume": 320600300
-        },
         {
           "date": "2025-11-26",
           "open": 181.63,
@@ -2019,27 +2011,27 @@
           "high": 159.92,
           "low": 150.5,
           "close": 155.38,
-          "volume": 383594200
+          "volume": 386223600
+        },
+        {
+          "date": "2026-11-25",
+          "open": 144.06,
+          "high": 150.37,
+          "low": 141.17,
+          "close": 149.3,
+          "volume": 363377300
         }
       ]
     },
     {
       "symbol": "TSLA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764028800&period2=1795577599",
+      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764115200&period2=1795661475",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764028800&period2=1795577599&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764115200&period2=1795661475&interval=1d"
       ],
       "interval": "1d",
       "candles": [
-        {
-          "date": "2025-11-25",
-          "open": 414.42,
-          "high": 420.48,
-          "low": 405.95,
-          "close": 419.4,
-          "volume": 71915600
-        },
         {
           "date": "2025-11-26",
           "open": 423.95,
@@ -4038,27 +4030,27 @@
           "high": 390.09,
           "low": 375.5,
           "close": 384.68,
-          "volume": 28697600
+          "volume": 28792900
+        },
+        {
+          "date": "2026-11-25",
+          "open": 370.52,
+          "high": 383.73,
+          "low": 357.64,
+          "close": 380.14,
+          "volume": 34789900
         }
       ]
     },
     {
       "symbol": "AAPL",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764028800&period2=1795577599",
+      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764115200&period2=1795661475",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764028800&period2=1795577599&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764115200&period2=1795661475&interval=1d"
       ],
       "interval": "1d",
       "candles": [
-        {
-          "date": "2025-11-25",
-          "open": 275.27,
-          "high": 280.38,
-          "low": 275.25,
-          "close": 276.97,
-          "volume": 46914200
-        },
         {
           "date": "2025-11-26",
           "open": 276.96,
@@ -6057,7 +6049,15 @@
           "high": 354.4,
           "low": 345.88,
           "close": 354.07,
-          "volume": 41214200
+          "volume": 41270400
+        },
+        {
+          "date": "2026-11-25",
+          "open": 353.48,
+          "high": 356.75,
+          "low": 345.13,
+          "close": 355.58,
+          "volume": 54240100
         }
       ]
     },
@@ -6066,19 +6066,11 @@
       "source": "Coinbase Exchange",
       "sourceUrl": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
       "requestUrls": [
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-25T00:00:00.000Z&end=2026-09-01T00:00:00.000Z",
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-01T00:00:00.000Z&end=2026-11-25T03:33:19.000Z"
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-26T00:00:00.000Z&end=2026-09-02T00:00:00.000Z",
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-02T00:00:00.000Z&end=2026-11-26T02:51:15.000Z"
       ],
       "interval": "1d",
       "candles": [
-        {
-          "date": "2025-11-25",
-          "open": 88264,
-          "high": 88486.82,
-          "low": 86067.02,
-          "close": 87325.01,
-          "volume": 10484.73675809
-        },
         {
           "date": "2025-11-26",
           "open": 87325,
@@ -8990,6 +8982,14 @@
           "low": 59189.67,
           "close": 59740.87,
           "volume": 13455.7263034
+        },
+        {
+          "date": "2026-11-25",
+          "open": 59741.39,
+          "high": 60487,
+          "low": 57208.17,
+          "close": 60383.51,
+          "volume": 16694.51416431
         }
       ]
     }
