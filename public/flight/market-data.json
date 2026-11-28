@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "windowStart": "2025-11-27",
-  "windowEnd": "2026-11-27",
-  "fetchedAt": "2026-11-27T02:51:57.073Z",
+  "windowStart": "2025-11-28",
+  "windowEnd": "2026-11-28",
+  "fetchedAt": "2026-11-28T02:40:44.857Z",
   "assets": [
     {
       "symbol": "NVDA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764201600&period2=1795747917",
+      "sourceUrl": "https://finance.yahoo.com/quote/NVDA/history/?period1=1764288000&period2=1795833644",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764201600&period2=1795747917&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1764288000&period2=1795833644&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -2012,15 +2012,23 @@
           "low": 141.17,
           "close": 149.3,
           "volume": 366571900
+        },
+        {
+          "date": "2026-11-27",
+          "open": 151.9,
+          "high": 151.98,
+          "low": 145.39,
+          "close": 150.49,
+          "volume": 185759600
         }
       ]
     },
     {
       "symbol": "TSLA",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764201600&period2=1795747917",
+      "sourceUrl": "https://finance.yahoo.com/quote/TSLA/history/?period1=1764288000&period2=1795833644",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764201600&period2=1795747917&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1764288000&period2=1795833644&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -4023,15 +4031,23 @@
           "low": 357.64,
           "close": 380.14,
           "volume": 34915800
+        },
+        {
+          "date": "2026-11-27",
+          "open": 391.34,
+          "high": 401.18,
+          "low": 384.66,
+          "close": 400,
+          "volume": 26634600
         }
       ]
     },
     {
       "symbol": "AAPL",
       "source": "Yahoo Finance",
-      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764201600&period2=1795747917",
+      "sourceUrl": "https://finance.yahoo.com/quote/AAPL/history/?period1=1764288000&period2=1795833644",
       "requestUrls": [
-        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764201600&period2=1795747917&interval=1d"
+        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1764288000&period2=1795833644&interval=1d"
       ],
       "interval": "1d",
       "candles": [
@@ -6034,6 +6050,14 @@
           "low": 345.13,
           "close": 355.58,
           "volume": 54285300
+        },
+        {
+          "date": "2026-11-27",
+          "open": 358.21,
+          "high": 359.5,
+          "low": 355.64,
+          "close": 358.54,
+          "volume": 22683900
         }
       ]
     },
@@ -6042,19 +6066,11 @@
       "source": "Coinbase Exchange",
       "sourceUrl": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
       "requestUrls": [
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-27T00:00:00.000Z&end=2026-09-03T00:00:00.000Z",
-        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-03T00:00:00.000Z&end=2026-11-27T02:51:57.000Z"
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2025-11-28T00:00:00.000Z&end=2026-09-04T00:00:00.000Z",
+        "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=2026-09-04T00:00:00.000Z&end=2026-11-28T02:40:44.000Z"
       ],
       "interval": "1d",
       "candles": [
-        {
-          "date": "2025-11-27",
-          "open": 90468.83,
-          "high": 91925.4,
-          "low": 90067.81,
-          "close": 91316.7,
-          "volume": 8201.73046924
-        },
         {
           "date": "2025-11-28",
           "open": 91316.7,
@@ -8966,6 +8982,14 @@
           "low": 59842.43,
           "close": 60495.57,
           "volume": 5928.1191544
+        },
+        {
+          "date": "2026-11-27",
+          "open": 60495.56,
+          "high": 62140.28,
+          "low": 58700,
+          "close": 59858.49,
+          "volume": 15239.78891719
         }
       ]
     }
